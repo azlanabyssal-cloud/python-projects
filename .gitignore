@@ -1,0 +1,5 @@
+# mac creates this automatically, we dont need it in github
+.DS_Store
+
+# this file gets created when you run the todo app
+tasks.json
