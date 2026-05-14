@@ -3,3 +3,8 @@
 
 # this file gets created when you run the todo app
 tasks.json
+
+# editor and tool config folders
+.claude/
+__pycache__/
+*.pyc
