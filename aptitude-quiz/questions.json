@@ -1,0 +1,162 @@
+[
+    {
+        "id": 1,
+        "topic": "Quantitative",
+        "question": "A train 150 metres long crosses a pole in 15 seconds. What is its speed in km/h?",
+        "options": ["A) 36 km/h", "B) 40 km/h", "C) 48 km/h", "D) 54 km/h"],
+        "answer": "A",
+        "explanation": "Speed = 150/15 = 10 m/s. Convert: 10 x 18/5 = 36 km/h"
+    },
+    {
+        "id": 2,
+        "topic": "Quantitative",
+        "question": "If 15% of x = 18, find x.",
+        "options": ["A) 100", "B) 108", "C) 120", "D) 130"],
+        "answer": "C",
+        "explanation": "x = 18 / 0.15 = 120"
+    },
+    {
+        "id": 3,
+        "topic": "Quantitative",
+        "question": "A shopkeeper buys an item for Rs.200 and sells it at 25% profit. What is the selling price?",
+        "options": ["A) Rs.220", "B) Rs.250", "C) Rs.240", "D) Rs.225"],
+        "answer": "B",
+        "explanation": "SP = 200 x 1.25 = Rs.250"
+    },
+    {
+        "id": 4,
+        "topic": "Quantitative",
+        "question": "The average of 5 numbers is 20. If one number 30 is removed, what is the new average?",
+        "options": ["A) 15", "B) 17.5", "C) 18", "D) 16"],
+        "answer": "B",
+        "explanation": "Total = 5 x 20 = 100. After removing 30: 70 / 4 = 17.5"
+    },
+    {
+        "id": 5,
+        "topic": "Quantitative",
+        "question": "A can do a work in 10 days and B in 15 days. In how many days can they finish it together?",
+        "options": ["A) 6 days", "B) 8 days", "C) 5 days", "D) 12 days"],
+        "answer": "A",
+        "explanation": "Together per day = 1/10 + 1/15 = 5/30 = 1/6. So 6 days."
+    },
+    {
+        "id": 6,
+        "topic": "Logical",
+        "question": "Find the next number in the series: 2, 6, 12, 20, 30, ?",
+        "options": ["A) 38", "B) 42", "C) 40", "D) 36"],
+        "answer": "B",
+        "explanation": "Differences are 4, 6, 8, 10, 12. Next term = 30 + 12 = 42"
+    },
+    {
+        "id": 7,
+        "topic": "Logical",
+        "question": "If BOOK is coded as CPPL, how is DEAR coded?",
+        "options": ["A) EFBT", "B) DFBS", "C) EFBS", "D) EGBS"],
+        "answer": "C",
+        "explanation": "Each letter shifted by +1. D->E, E->F, A->B, R->S = EFBS"
+    },
+    {
+        "id": 8,
+        "topic": "Logical",
+        "question": "Find the odd one out: 121, 144, 169, 196, 225, 250",
+        "options": ["A) 121", "B) 196", "C) 225", "D) 250"],
+        "answer": "D",
+        "explanation": "All others are perfect squares (11², 12², 13², 14², 15²). 250 is not."
+    },
+    {
+        "id": 9,
+        "topic": "Logical",
+        "question": "Pointing to a man, a woman says 'His mother is the only daughter of my mother.' How is the woman related to the man?",
+        "options": ["A) Mother", "B) Sister", "C) Aunt", "D) Grandmother"],
+        "answer": "A",
+        "explanation": "Only daughter of my mother = the woman herself. So she is his mother."
+    },
+    {
+        "id": 10,
+        "topic": "Logical",
+        "question": "A person walks 5km North, then 3km East, then 5km South. How far is he from the starting point?",
+        "options": ["A) 13 km", "B) 3 km", "C) 8 km", "D) 5 km"],
+        "answer": "B",
+        "explanation": "North 5 and South 5 cancel out. He is 3km East of start."
+    },
+    {
+        "id": 11,
+        "topic": "Verbal",
+        "question": "Choose the synonym of ELOQUENT.",
+        "options": ["A) Fluent", "B) Silent", "C) Dull", "D) Confused"],
+        "answer": "A",
+        "explanation": "Eloquent means expressing ideas fluently and persuasively. Synonym = Fluent."
+    },
+    {
+        "id": 12,
+        "topic": "Verbal",
+        "question": "Choose the antonym of ABUNDANT.",
+        "options": ["A) Plenty", "B) Scarce", "C) Rich", "D) Excess"],
+        "answer": "B",
+        "explanation": "Abundant means plentiful. Its antonym is Scarce (in short supply)."
+    },
+    {
+        "id": 13,
+        "topic": "Verbal",
+        "question": "Fill in the blank: He is ___ honest man.",
+        "options": ["A) a", "B) an", "C) the", "D) no article needed"],
+        "answer": "B",
+        "explanation": "Use 'an' before words starting with a vowel sound. 'Honest' has a silent H, sounds like 'onest'."
+    },
+    {
+        "id": 14,
+        "topic": "Verbal",
+        "question": "One word substitution: A person who cannot be corrected.",
+        "options": ["A) Incorrigible", "B) Illegible", "C) Inevitable", "D) Incredible"],
+        "answer": "A",
+        "explanation": "Incorrigible = a person who cannot be reformed or corrected."
+    },
+    {
+        "id": 15,
+        "topic": "Verbal",
+        "question": "Choose the correctly spelled word.",
+        "options": ["A) Accomodation", "B) Accommodation", "C) Acommodation", "D) Acomodation"],
+        "answer": "B",
+        "explanation": "Correct spelling is Accommodation — double c and double m."
+    },
+    {
+        "id": 16,
+        "topic": "Python",
+        "question": "What is the output of: print(type(5/2))",
+        "options": ["A) <class 'int'>", "B) <class 'float'>", "C) <class 'str'>", "D) Error"],
+        "answer": "B",
+        "explanation": "In Python 3, / always returns float. 5/2 = 2.5, type is float."
+    },
+    {
+        "id": 17,
+        "topic": "Python",
+        "question": "What is the output of: print(len('Hello World'))",
+        "options": ["A) 10", "B) 11", "C) 5", "D) Error"],
+        "answer": "B",
+        "explanation": "len counts all characters including the space. H-e-l-l-o-space-W-o-r-l-d = 11"
+    },
+    {
+        "id": 18,
+        "topic": "Python",
+        "question": "What is the output of: print([1, 2, 3] * 2)",
+        "options": ["A) [2, 4, 6]", "B) [1, 2, 3, 1, 2, 3]", "C) 6", "D) Error"],
+        "answer": "B",
+        "explanation": "* on a list repeats it. [1,2,3] * 2 = [1, 2, 3, 1, 2, 3]"
+    },
+    {
+        "id": 19,
+        "topic": "Python",
+        "question": "x = [1, 2, 3, 4, 5]\nWhat does print(x[1:4]) output?",
+        "options": ["A) [1, 2, 3]", "B) [2, 3, 4]", "C) [2, 3, 4, 5]", "D) [1, 2, 3, 4]"],
+        "answer": "B",
+        "explanation": "Slicing x[1:4] gives index 1, 2, 3 (4 is excluded). Values: 2, 3, 4"
+    },
+    {
+        "id": 20,
+        "topic": "Python",
+        "question": "for i in range(1, 6):\n    if i == 3:\n        continue\n    print(i, end=' ')\n\nWhat is the output?",
+        "options": ["A) 1 2 3 4 5", "B) 1 2 4 5", "C) 1 2 3 4", "D) 3"],
+        "answer": "B",
+        "explanation": "continue skips the rest of the loop body when i == 3. So 3 is not printed."
+    }
+]
