@@ -1,0 +1,57 @@
+[
+  {
+    "question": "A Swiggy dataset shows delivery_time: mean=45 min, median=28 min. What does this tell you and what should you do?",
+    "options": [
+      "The data is normally distributed — use mean to summarise delivery performance",
+      "The data is right-skewed — a few very late deliveries pull the mean up. Use median as the representative metric and flag extreme values for investigation.",
+      "There is a data error — mean should always be close to median",
+      "Drop all deliveries above 45 min — they are outliers distorting the metric"
+    ],
+    "answer": 1,
+    "explanation": "When mean > median, the data is right-skewed — a handful of extreme values pull the mean far above where most data sits. The median (28 min) is the honest 'typical delivery'. Rule: skewed data → use median for central tendency, IQR for spread. Salary, revenue, house prices, and delivery times are almost always right-skewed in real datasets."
+  },
+  {
+    "question": "Pearson correlation between 'study_hours' and 'first_salary' = 0.84. A manager says 'More study hours directly causes higher salary.' What is the correct response?",
+    "options": [
+      "Agree — 0.84 is strong and confirms the causal link",
+      "Correlation does not imply causation — both could be driven by a confounding variable like discipline, city tier, or college rank. A controlled experiment is needed to claim causation.",
+      "0.84 is suspiciously high — it suggests data leakage in the dataset",
+      "Disagree — 0.84 is actually a weak correlation and should be ignored"
+    ],
+    "answer": 1,
+    "explanation": "Correlation = 0.84 means these variables move together, but a third variable (conscientiousness, city, college tier) might drive both. Classic example: ice cream sales and drowning deaths correlate — driven by summer heat. Always report 'associated with', not 'causes', unless you have experimental evidence with confounders eliminated."
+  },
+  {
+    "question": "df.describe() shows delivery_time: mean=34, std=12, min=5, 25%=26, 50%=32, 75%=41, max=9999. What is the most urgent EDA action?",
+    "options": [
+      "Drop the max value immediately — it is clearly a data error",
+      "The std of 12 is too high — apply StandardScaler before analysis",
+      "Investigate max=9999 as a likely outlier. IQR fence: Q3 + 1.5×IQR = 41 + 1.5×15 = 63.5 min. A 9999-min delivery is almost certainly a data entry error. Cap, flag as binary feature, or investigate the source before dropping.",
+      "Nothing — extreme max values are always expected in delivery time data"
+    ],
+    "answer": 2,
+    "explanation": "describe().max is the first sanity check. Q3=41, IQR=15, upper fence=63.5. A 9,999-minute delivery = ~7 days — clearly a data entry error (missing digit? placeholder?). Process: 1) Identify. 2) Understand why. 3) Decide: cap at fence, set NaN and impute, or add 'delivery_capped' binary flag. Never silently drop without documenting why."
+  },
+  {
+    "question": "Correlation matrix: income vs tax_paid r=0.97, income vs loan_amount r=0.89. You are building a linear regression to predict credit_score. What should you do?",
+    "options": [
+      "Drop all correlated features — linear regression cannot handle any correlation between features",
+      "Keep all features — correlation between input features does not affect linear regression at all",
+      "income and tax_paid show very high multicollinearity (r=0.97), inflating coefficient variance (VIF likely >10). Options: drop tax_paid, use Ridge regression (L2 handles it), or apply PCA to compress them.",
+      "Apply StandardScaler — it removes multicollinearity automatically"
+    ],
+    "answer": 2,
+    "explanation": "Multicollinearity (r>0.8 between features) doesn't stop predictions but makes linear model coefficients unstable and uninterpretable — small data changes cause large coefficient swings. Check VIF (Variance Inflation Factor) — VIF>10 is the standard threshold. Solutions: drop one feature, use Ridge regression, or PCA. Tree models (Random Forest, XGBoost) are immune to multicollinearity."
+  },
+  {
+    "question": "A 'pincode' column has 2,847 unique values in a 50,000-row restaurant dataset. You are building XGBoost for delivery time prediction. Best encoding approach?",
+    "options": [
+      "One-Hot Encode — create 2,847 binary columns; XGBoost handles sparse input well",
+      "Label Encode (0 to 2846) — XGBoost splits on thresholds so arbitrary ordering does not matter",
+      "Target Encode — replace each pincode with its mean delivery time, computed on training folds only (cross-fold) to prevent leakage. Or cluster pincodes into geographic zones first, then encode the ~20 zones.",
+      "Drop it — features with more than 1000 unique values are always noise"
+    ],
+    "answer": 2,
+    "explanation": "One-Hot: 2,847 columns → memory explosion, extremely sparse rows. Label Encoding: arbitrary integer ordering misses geographic structure. Target Encoding: compact (1 column), captures real signal (mean delivery per pincode). Critical: compute encodings on training folds only during cross-validation to prevent leakage. Alternative: cluster pincodes into tier-1/tier-2/tier-3 city zones first (~20 clusters), then one-hot — preserves structure without leakage risk."
+  }
+]

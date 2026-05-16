@@ -1,0 +1,716 @@
+{% extends 'base.html' %}
+{% block title %}Exploratory Data Analysis — Abyss{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<style>
+  /* ── Layer banners ──────────────────────────────── */
+  .layer-banner { display:flex; align-items:center; gap:1rem; padding:0.6rem 1.5rem; border-left:3px solid; font-size:var(--t-xs); font-weight:700; letter-spacing:2px; text-transform:uppercase; background:var(--bg-surface); border-radius:0 var(--radius-sm) var(--radius-sm) 0; margin-bottom:2.5rem; }
+  .layer-banner span { color:var(--text-muted); font-weight:400; letter-spacing:0; text-transform:none; font-size:11px; }
+  .layer-banner--1 { border-color:var(--primary); color:var(--primary); }
+  .layer-banner--2 { border-color:var(--teaching); color:var(--teaching); }
+  .layer-banner--3 { border-color:var(--warning); color:var(--warning); }
+
+  /* ── Syntax colours ─────────────────────────────── */
+  .kw { color:#818cf8; } .cm { color:#4b5563; font-style:italic; } .st { color:#22d3ee; } .nm { color:#f59e0b; } .fn { color:#22c55e; }
+
+  /* ── Reading progress bar ────────────────────────── */
+  .topic-progress-bar { position:fixed; top:var(--nav-height); left:0; right:0; height:2px; background:var(--border); z-index:100; }
+  .topic-progress-bar__fill { height:100%; background:linear-gradient(90deg,var(--primary),var(--teaching)); width:0%; transition:width 0.3s; }
+
+  /* ── Creature mascot ─────────────────────────────── */
+  .creature-wrap { position:absolute; bottom:4px; right:8px; z-index:20; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
+  .creature-svg { width:90px; height:90px; animation:creature-float 3.5s ease-in-out infinite; cursor:pointer; filter:drop-shadow(0 4px 14px rgba(99,102,241,0.4)); pointer-events:auto; }
+  .creature-bubble { background:var(--bg-surface); border:1px solid var(--border-strong); border-radius:12px; padding:0.45rem 0.8rem; font-size:11px; line-height:1.45; color:var(--text-primary); max-width:185px; text-align:center; margin-bottom:0.35rem; opacity:0; transform:translateY(8px) scale(0.94); transition:opacity 0.22s,transform 0.22s; pointer-events:none; }
+  .creature-bubble.visible { opacity:1; transform:translateY(0) scale(1); }
+  .creature-excited   { animation:creature-bounce 0.55s ease-in-out !important; }
+  .creature-celebrate { animation:creature-spin   0.9s  ease-in-out !important; }
+  .creature-thinking  { animation:creature-tilt   1.1s  ease-in-out !important; }
+
+  /* ── Data table (reused from topic2) ────────────── */
+  .data-hospital-table { width:100%; border-collapse:collapse; font-size:var(--t-sm); }
+  .dh-th { padding:0.5rem 0.75rem; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); border-bottom:1px solid var(--border); text-align:left; }
+  .dh-td { padding:0.5rem 0.75rem; border-bottom:1px solid var(--border); color:var(--text-secondary); font-family:var(--font-code); font-size:13px; transition:background 0.2s; white-space:nowrap; }
+  .dh-tr:hover .dh-td { background:rgba(99,102,241,0.03); }
+
+  /* ── EDA tab buttons ─────────────────────────────── */
+  .eda-tab { padding:0.45rem 1rem; border-radius:var(--radius-sm); border:1px solid var(--border-strong); background:transparent; color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; font-family:var(--font-code); transition:all 0.15s; }
+  .eda-tab:hover { border-color:var(--primary-border); color:var(--primary); }
+  .eda-tab--active { background:var(--primary-glow); border-color:var(--primary-border); color:var(--primary); }
+
+  /* ── Distribution shape buttons ─────────────────── */
+  .dist-btn { padding:0.45rem 1rem; border-radius:var(--radius-sm); border:1px solid var(--border-strong); background:transparent; color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; font-family:var(--font-code); transition:all 0.15s; }
+  .dist-btn:hover { border-color:var(--primary-border); color:var(--primary); }
+  .dist-btn--active { background:var(--primary-glow); border-color:var(--primary-border); color:var(--primary); }
+
+  /* ── 3-level code tabs ───────────────────────────── */
+  .code-tabs { display:flex; gap:0; flex-wrap:wrap; }
+  .code-tab { padding:0.5rem 1.1rem; border:1px solid var(--border-strong); border-bottom:none; background:var(--bg-elevated); color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; font-family:var(--font-code); transition:all 0.15s; }
+  .code-tab:first-child { border-radius:var(--radius-sm) 0 0 0; }
+  .code-tab--active { background:var(--bg-surface); color:var(--primary); border-color:var(--primary-border); }
+  .code-panel { display:none; }
+  .code-panel--active { display:block; }
+  .code-panel .code-block { border-top-left-radius:0; margin-top:0; }
+
+  /* ── Scale cards ─────────────────────────────────── */
+  .scale-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:1rem; margin-top:1.5rem; }
+  .scale-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem; }
+  .scale-card__company { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:0.4rem; }
+  .scale-card__metric  { font-size:1.75rem; font-weight:800; color:var(--primary); line-height:1; margin-bottom:0.3rem; }
+  .scale-card__label   { font-size:11.5px; color:var(--text-secondary); line-height:1.5; }
+
+  /* ── Placement tier map ──────────────────────────── */
+  .tier-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(195px,1fr)); gap:0.75rem; margin-top:1.25rem; }
+  .tier-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem; }
+  .tier-card--service { border-left:3px solid #4b5563; }
+  .tier-card--mnc     { border-left:3px solid #f59e0b; }
+  .tier-card--product { border-left:3px solid #22d3ee; }
+  .tier-card--bigtech { border-left:3px solid #818cf8; }
+  .tier-card__name      { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:0.35rem; }
+  .tier-card__companies { font-size:11px; color:var(--text-secondary); margin-bottom:0.45rem; line-height:1.45; }
+  .tier-card__asks      { font-size:11.5px; font-weight:600; color:var(--text-primary); margin-bottom:0.3rem; }
+  .tier-card__detail    { font-size:11px; color:var(--text-secondary); line-height:1.5; margin-bottom:0.5rem; }
+  .tier-card__salary    { font-size:10px; color:var(--text-muted); padding-top:0.5rem; border-top:1px solid var(--border); }
+  .tier-no  { color:#6b7280; }
+  .tier-yes { color:#22c55e; }
+
+  /* ── Interview accordion ─────────────────────────── */
+  .iq-item { border-bottom:1px solid var(--border); padding:var(--s-5) 0; }
+  .iq-item:last-child { border-bottom:none; }
+  .iq-q { display:flex; gap:var(--s-4); align-items:flex-start; cursor:pointer; user-select:none; }
+  .iq-q__num { font-family:var(--font-code); font-size:var(--t-sm); color:var(--teaching); font-weight:700; flex-shrink:0; padding-top:2px; }
+  .iq-q__text { font-size:var(--t-base); font-weight:500; color:var(--text-primary); line-height:1.5; flex:1; }
+  .iq-q__arrow { color:var(--text-muted); font-size:0.75rem; flex-shrink:0; padding-top:4px; transition:transform 0.2s; }
+  .iq-item.open .iq-q__arrow { transform:rotate(90deg); }
+  .iq-answer { display:none; padding:var(--s-4) 0 0 0; font-size:var(--t-sm); color:var(--text-secondary); line-height:1.8; }
+  .iq-answer.open { display:block; }
+  .iq-answer strong { color:var(--text-primary); }
+  .iq-badges { margin-bottom:0.55rem; }
+  .iq-badge { display:inline-block; font-size:9px; font-weight:700; padding:0.18rem 0.55rem; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; margin-right:0.35rem; }
+  .iq-badge--tier  { background:rgba(99,102,241,0.15); color:#818cf8; }
+  .iq-badge--tests { background:rgba(34,211,238,0.12); color:#22d3ee; }
+  .iq-script { background:var(--bg-elevated); border-left:3px solid var(--teaching); border-radius:0 var(--radius-sm) var(--radius-sm) 0; padding:0.85rem 1rem; margin:0.75rem 0 0.6rem; }
+  .iq-script__label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--teaching); display:block; margin-bottom:0.4rem; }
+  .iq-script__text  { font-size:var(--t-sm); color:var(--text-secondary); line-height:1.75; font-style:italic; }
+  .iq-script__text strong { color:var(--text-primary); font-style:normal; }
+  .iq-followup { font-size:var(--t-xs); color:var(--text-muted); padding:0.5rem 0.8rem; border:1px solid var(--border); border-radius:var(--radius-sm); }
+  .iq-followup strong { color:var(--warning); }
+  .honest-note { font-size:var(--t-xs); color:var(--text-muted); padding:0.7rem 1rem; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-elevated); line-height:1.65; margin-top:0.75rem; }
+  .honest-note strong { color:var(--warning); }
+
+  /* ── Keyframes ──────────────────────────────────── */
+  @keyframes creature-float  { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-9px);} }
+  @keyframes creature-bounce { 0%,100%{transform:scale(1) rotate(0deg);} 25%{transform:scale(1.2) rotate(-10deg);} 75%{transform:scale(1.2) rotate(10deg);} }
+  @keyframes creature-spin   { 0%{transform:scale(1) rotate(0deg);} 50%{transform:scale(1.22) rotate(180deg);} 100%{transform:scale(1) rotate(360deg);} }
+  @keyframes creature-tilt   { 0%,100%{transform:rotate(0deg);} 25%{transform:rotate(-14deg);} 75%{transform:rotate(14deg);} }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="topic-progress-bar">
+  <div class="topic-progress-bar__fill" id="read-progress"></div>
+</div>
+
+<!-- ── Topic Header ─────────────────────────────────────────────────────── -->
+<div class="topic-header" style="padding-top: calc(var(--nav-height) + 3rem);">
+  <div class="container">
+    <div class="topic-header__track">Machine Learning Track</div>
+    <div class="topic-header__num">Level 01: Foundation &nbsp;·&nbsp; Topic 03 of 52</div>
+    <h1 class="topic-header__title">Exploratory Data Analysis</h1>
+    <p class="topic-header__sub">
+      Before you train a single model, you must understand your data.
+      EDA is where bad assumptions get caught — and good features get discovered.
+    </p>
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-top:1.25rem; flex-wrap:wrap;">
+      <span class="badge badge--primary">Level 01</span>
+      <span class="badge badge--muted">Foundation</span>
+      <span class="badge badge--muted">~20 min</span>
+      <span class="badge badge--teaching">3 Layers</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     LAYER 1 — SIMPLE & EASY
+     ══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="topic-section">
+  <div class="container">
+
+    <div class="layer-banner layer-banner--1">
+      Layer 1 — Simple &amp; Easy
+      <span>understand the core habit in 60 seconds</span>
+    </div>
+
+    <div class="section-label">The First Rule of ML</div>
+    <h2 class="section-title">Look at your data before you model it. Every time.</h2>
+    <div class="section-body">
+      <p>EDA is the process of understanding your dataset before feeding it to any algorithm.
+        You look at its shape, its distributions, its missing values, and its relationships.
+        Without EDA, you are training blind.</p>
+      <p style="margin-top:1rem;">
+        A senior ML engineer at Flipkart or Google spends 1–2 days on EDA before writing a single line of model code.
+        EDA catches <strong>data leakage, outliers, wrong dtypes, skewed distributions, and multicollinearity</strong>
+        — all of which silently destroy model quality if missed.
+      </p>
+    </div>
+
+    <!-- ── EDA Explorer ──────────────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:2.5rem;">EDA Explorer</div>
+    <h2 class="section-title">Same dataset. Four different views. Four different insights.</h2>
+    <div class="section-body">
+      <p>A real Swiggy-style dataset. Switch tabs to see what each EDA step reveals.
+        The outlier hiding in the Stats tab would have crashed your model silently.</p>
+    </div>
+
+    <div class="card" id="eda-wrapper" style="position:relative; padding-bottom:3rem;">
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+        <button class="eda-tab" data-tab="table">Table</button>
+        <button class="eda-tab" data-tab="stats">Stats</button>
+        <button class="eda-tab" data-tab="histogram">Histogram</button>
+        <button class="eda-tab" data-tab="heatmap">Heatmap</button>
+      </div>
+      <div id="eda-canvas" style="min-height:200px;"></div>
+    </div>
+
+    <!-- ── What EDA tells you ────────────────────────────────────────── -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-top:2.5rem;">
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-left:3px solid #818cf8; border-radius:var(--radius-sm); padding:1rem;">
+        <div style="font-size:1.4rem; margin-bottom:0.4rem;">📊</div>
+        <div style="font-size:var(--t-sm); font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">Shape &amp; Types</div>
+        <div style="font-size:var(--t-xs); color:var(--text-secondary); line-height:1.6;"><code>df.shape</code>, <code>df.dtypes</code>, <code>df.isnull().sum()</code> — your first three commands on every new dataset.</div>
+      </div>
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-left:3px solid #f59e0b; border-radius:var(--radius-sm); padding:1rem;">
+        <div style="font-size:1.4rem; margin-bottom:0.4rem;">⚡</div>
+        <div style="font-size:var(--t-sm); font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">Outliers &amp; Extremes</div>
+        <div style="font-size:var(--t-xs); color:var(--text-secondary); line-height:1.6;"><code>df.describe().max</code> is always the first number to eyeball. One corrupt row can drag the mean by 100×.</div>
+      </div>
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-left:3px solid #22d3ee; border-radius:var(--radius-sm); padding:1rem;">
+        <div style="font-size:1.4rem; margin-bottom:0.4rem;">🔗</div>
+        <div style="font-size:var(--t-sm); font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">Correlations</div>
+        <div style="font-size:var(--t-xs); color:var(--text-secondary); line-height:1.6;">Features that move together — useful for feature selection and detecting multicollinearity before it breaks your linear model.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     LAYER 2 — MASTER IN REAL
+     ══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="topic-section">
+  <div class="container">
+
+    <div class="layer-banner layer-banner--2">
+      Layer 2 — Master in Real
+      <span>the four things EDA actually reveals</span>
+    </div>
+
+    <!-- ── Distribution Shapes ───────────────────────────────────────── -->
+    <div class="section-label">Distribution Shapes</div>
+    <h2 class="section-title">The shape of your data tells you which statistics to use.</h2>
+    <div class="section-body">
+      <p>Before computing mean and std, ask: <strong>what shape is this distribution?</strong>
+        A right-skewed salary distribution makes the mean meaningless — and your linear model's
+        assumptions invalid. Toggle the shapes to see the four patterns you will encounter in every real dataset.</p>
+    </div>
+
+    <div class="card" style="padding-bottom:1rem;">
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.25rem;">
+        <button class="dist-btn" data-shape="normal">Normal</button>
+        <button class="dist-btn" data-shape="right">Right-Skewed</button>
+        <button class="dist-btn" data-shape="left">Left-Skewed</button>
+        <button class="dist-btn" data-shape="bimodal">Bimodal</button>
+      </div>
+      <div id="dist-canvas" style="min-height:200px;"></div>
+    </div>
+
+    <!-- ── Key EDA Metrics ───────────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:2.5rem;">Key EDA Metrics</div>
+    <h2 class="section-title">Three numbers every ML engineer quotes in interviews.</h2>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; margin-top:1.5rem;">
+
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1.25rem;">
+        <div style="font-family:var(--font-code); font-size:1.2rem; font-weight:800; color:#818cf8; margin-bottom:0.5rem;">IQR</div>
+        <div style="font-family:var(--font-code); font-size:var(--t-xs); color:var(--teaching); margin-bottom:0.5rem;">Q3 − Q1</div>
+        <div style="font-size:var(--t-xs); color:var(--text-secondary); line-height:1.65;">
+          Spread of the middle 50%. Outlier fences: <code>Q1 − 1.5×IQR</code> (lower) and <code>Q3 + 1.5×IQR</code> (upper).
+          Robust to extremes — unlike std, which is dragged by the same outliers you are trying to detect.
+        </div>
+      </div>
+
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1.25rem;">
+        <div style="font-family:var(--font-code); font-size:1.2rem; font-weight:800; color:#f59e0b; margin-bottom:0.5rem;">Skewness</div>
+        <div style="font-family:var(--font-code); font-size:var(--t-xs); color:var(--teaching); margin-bottom:0.5rem;">0 = symmetric · + = right tail · − = left tail</div>
+        <div style="font-size:var(--t-xs); color:var(--text-secondary); line-height:1.65;">
+          |skewness| &gt; 1 → significantly non-normal. Use median for central tendency.
+          Apply <code>np.log1p()</code> transform to pull right-skewed distributions toward normality.
+        </div>
+      </div>
+
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1.25rem;">
+        <div style="font-family:var(--font-code); font-size:1.2rem; font-weight:800; color:#22d3ee; margin-bottom:0.5rem;">Pearson r</div>
+        <div style="font-family:var(--font-code); font-size:var(--t-xs); color:var(--teaching); margin-bottom:0.5rem;">−1 to +1 · linear relationship only</div>
+        <div style="font-size:var(--t-xs); color:var(--text-secondary); line-height:1.65;">
+          |r| &gt; 0.8 = strong. |r| 0.4–0.8 = moderate. |r| &lt; 0.4 = weak.
+          For non-linear relationships, use <strong>Spearman rank correlation</strong> instead.
+          High r between two input features = multicollinearity warning.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Code Tabs ─────────────────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:2.5rem;">EDA Code</div>
+    <h2 class="section-title">Three levels of EDA — all using pandas and seaborn.</h2>
+
+    <div style="margin-top:1.5rem;">
+      <div class="code-tabs">
+        <button class="code-tab code-tab--active" data-tab="describe">describe()</button>
+        <button class="code-tab" data-tab="visual">Visualisation</button>
+        <button class="code-tab" data-tab="full">Full EDA Pipeline</button>
+      </div>
+
+      <div class="code-panel code-panel--active" id="tab-describe">
+        <div class="code-block">
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+df = pd.<span class="fn">read_csv</span>(<span class="st">'swiggy_orders.csv'</span>)
+
+<span class="cm"># First look — always run these three</span>
+<span class="fn">print</span>(df.shape)           <span class="cm"># (100, 8) — rows, columns</span>
+<span class="fn">print</span>(df.dtypes)          <span class="cm"># delivery_time: float64</span>
+<span class="fn">print</span>(df.isnull().<span class="fn">sum</span>())  <span class="cm"># missing count per column</span>
+
+<span class="cm"># Summary statistics — your first sanity check</span>
+<span class="fn">print</span>(df.<span class="fn">describe</span>())
+<span class="cm">#        delivery_time   rating  order_value
+# count    100.000000   98.0000   100.000000
+# mean      34.200000    4.1000   482.000000
+# std       11.300000    0.6200   198.000000
+# min       14.000000    1.8000    80.000000
+# 25%       26.000000    3.7000   320.000000
+# 50%       32.000000    4.2000   450.000000
+# 75%       41.000000    4.6000   610.000000
+# max     9999.000000    5.0000  1240.000000
+#                ⚡ — investigate this immediately</span>
+        </div>
+      </div>
+
+      <div class="code-panel" id="tab-visual">
+        <div class="code-block">
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+<span class="kw">import</span> seaborn <span class="kw">as</span> sns
+
+fig, axes = plt.<span class="fn">subplots</span>(<span class="nm">1</span>, <span class="nm">3</span>, figsize=(<span class="nm">14</span>, <span class="nm">4</span>))
+
+<span class="cm"># Distribution shape — is it normal, skewed, bimodal?</span>
+sns.<span class="fn">histplot</span>(df[<span class="st">'delivery_time'</span>], kde=<span class="kw">True</span>, bins=<span class="nm">20</span>, ax=axes[<span class="nm">0</span>])
+axes[<span class="nm">0</span>].<span class="fn">set_title</span>(<span class="st">'Delivery Time Distribution'</span>)
+
+<span class="cm"># Boxplot — outliers appear as individual dots</span>
+sns.<span class="fn">boxplot</span>(x=df[<span class="st">'delivery_time'</span>], ax=axes[<span class="nm">1</span>])
+axes[<span class="nm">1</span>].<span class="fn">set_title</span>(<span class="st">'Boxplot — Outlier Detection'</span>)
+
+<span class="cm"># Correlation heatmap — which features move together?</span>
+corr = df[[<span class="st">'delivery_time'</span>,<span class="st">'rating'</span>,<span class="st">'order_value'</span>]].<span class="fn">corr</span>()
+sns.<span class="fn">heatmap</span>(corr, annot=<span class="kw">True</span>, fmt=<span class="st">'.2f'</span>, cmap=<span class="st">'coolwarm'</span>,
+            center=<span class="nm">0</span>, ax=axes[<span class="nm">2</span>], square=<span class="kw">True</span>)
+axes[<span class="nm">2</span>].<span class="fn">set_title</span>(<span class="st">'Correlation Matrix'</span>)
+
+plt.<span class="fn">tight_layout</span>()
+plt.<span class="fn">show</span>()
+        </div>
+      </div>
+
+      <div class="code-panel" id="tab-full">
+        <div class="code-block">
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">def</span> <span class="fn">eda</span>(df, target=<span class="kw">None</span>):
+    <span class="fn">print</span>(<span class="st">"── Shape ──────────────────────────────"</span>)
+    <span class="fn">print</span>(<span class="st">f"  Rows: </span>{df.shape[<span class="nm">0</span>]:,}<span class="st">  Columns: </span>{df.shape[<span class="nm">1</span>]}<span class="st">"</span>)
+
+    <span class="fn">print</span>(<span class="st">"\n── Missing Values ─────────────────────"</span>)
+    miss = df.<span class="fn">isnull</span>().<span class="fn">sum</span>()
+    miss = miss[miss > <span class="nm">0</span>]
+    <span class="fn">print</span>(<span class="st">"  None"</span> <span class="kw">if</span> miss.<span class="fn">empty</span> <span class="kw">else</span> miss.<span class="fn">to_string</span>())
+
+    <span class="fn">print</span>(<span class="st">"\n── Summary Stats ──────────────────────"</span>)
+    <span class="fn">print</span>(df.<span class="fn">describe</span>().<span class="fn">round</span>(<span class="nm">2</span>).<span class="fn">to_string</span>())
+
+    <span class="fn">print</span>(<span class="st">"\n── Outliers (IQR method) ──────────────"</span>)
+    <span class="kw">for</span> col <span class="kw">in</span> df.<span class="fn">select_dtypes</span>(include=np.number).columns:
+        Q1 = df[col].<span class="fn">quantile</span>(<span class="nm">0.25</span>)
+        Q3 = df[col].<span class="fn">quantile</span>(<span class="nm">0.75</span>)
+        fence_hi = Q3 + <span class="nm">1.5</span> * (Q3 - Q1)
+        fence_lo = Q1 - <span class="nm">1.5</span> * (Q3 - Q1)
+        n = ((df[col] > fence_hi) | (df[col] &lt; fence_lo)).<span class="fn">sum</span>()
+        <span class="kw">if</span> n: <span class="fn">print</span>(<span class="st">f"  {col}: {n} outliers"</span>)
+
+    <span class="kw">if</span> target:
+        <span class="fn">print</span>(<span class="st">f"\n── Correlation with '{target}' ────────"</span>)
+        <span class="fn">print</span>(df.<span class="fn">corr</span>()[target].<span class="fn">sort_values</span>(ascending=<span class="kw">False</span>).<span class="fn">round</span>(<span class="nm">3</span>).<span class="fn">to_string</span>())
+
+<span class="fn">eda</span>(df, target=<span class="st">'rating'</span>)
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Industry Scale Cards ──────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:2.5rem;">EDA at Scale</div>
+    <h2 class="section-title">What EDA looks like when the dataset has 500 million rows.</h2>
+
+    <div class="scale-grid">
+      <div class="scale-card">
+        <div class="scale-card__company">Swiggy / Zomato</div>
+        <div class="scale-card__metric">2M+</div>
+        <div class="scale-card__label">orders per day. EDA runs on Spark — pandas would run out of memory on a single day's data.</div>
+      </div>
+      <div class="scale-card">
+        <div class="scale-card__company">Razorpay</div>
+        <div class="scale-card__metric">100+</div>
+        <div class="scale-card__label">features per transaction. EDA is automated — detecting feature drift between training and production data daily.</div>
+      </div>
+      <div class="scale-card">
+        <div class="scale-card__company">Google</div>
+        <div class="scale-card__metric">TFX</div>
+        <div class="scale-card__label">TensorFlow Extended runs EDA as a pipeline stage — schema validation, skew detection, anomaly alerts before every model retraining.</div>
+      </div>
+      <div class="scale-card">
+        <div class="scale-card__company">Flipkart</div>
+        <div class="scale-card__metric">ydata-profiling</div>
+        <div class="scale-card__label">Automated EDA tools generate 50-page HTML reports — correlations, distributions, duplicates, and cardinality in one command.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     LAYER 3 — FOR PLACEMENTS
+     ══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="topic-section">
+  <div class="container">
+
+    <div class="layer-banner layer-banner--3">
+      Layer 3 — For Placements
+      <span>what interviewers test and how to answer</span>
+    </div>
+
+    <!-- 3.1 — Placement Tier Map ────────────────────────────────────── -->
+    <div class="section-label">Placement Tier Map</div>
+    <h2 class="section-title">EDA questions by company tier — and what they are really testing.</h2>
+    <div class="section-body">
+      <p>EDA questions are deceptively open-ended. The difference between an intern answer and a
+        senior answer is not knowledge — it is the depth of reasoning and the number of failure modes you mention.</p>
+    </div>
+
+    <div class="tier-grid">
+      <div class="tier-card tier-card--service">
+        <div class="tier-card__name">Service / IT Giants</div>
+        <div class="tier-card__companies">TCS · Infosys · Wipro · HCL · Cognizant</div>
+        <div class="tier-card__asks"><span class="tier-no">✗ No EDA questions</span></div>
+        <div class="tier-card__detail">Aptitude + basic coding. EDA knowledge is irrelevant at intake. You will need it for actual work — but not the interview.</div>
+        <div class="tier-card__salary">Fresher CTC 2025: ₹3.5 – 7 LPA</div>
+      </div>
+      <div class="tier-card tier-card--mnc">
+        <div class="tier-card__name">MNC Product / R&amp;D Labs</div>
+        <div class="tier-card__companies">Adobe · SAP Labs · Samsung R&amp;D · Oracle · Cisco</div>
+        <div class="tier-card__asks"><span class="tier-yes">✓ Definition-level EDA</span></div>
+        <div class="tier-card__detail">"What is EDA?" "What does describe() return?" "How do you detect outliers?" — definition answers work here. Mention a project where you did it.</div>
+        <div class="tier-card__salary">Fresher CTC 2025: ₹8 – 22 LPA</div>
+      </div>
+      <div class="tier-card tier-card--product">
+        <div class="tier-card__name">India Product Companies</div>
+        <div class="tier-card__companies">Flipkart · Swiggy · PhonePe · Razorpay · CRED</div>
+        <div class="tier-card__asks"><span class="tier-yes">✓✓ Scenario-based EDA</span></div>
+        <div class="tier-card__detail">"Given this dataset, walk me through your EDA." They give you a dataset snippet and ask what you notice. IQR, skewness, correlation, outlier reasoning — all tested. Not definitions.</div>
+        <div class="tier-card__salary">Fresher CTC 2025: ₹15 – 40 LPA (ML/DS roles)</div>
+      </div>
+      <div class="tier-card tier-card--bigtech">
+        <div class="tier-card__name">Big Tech India Offices</div>
+        <div class="tier-card__companies">Google · Microsoft IDC · Amazon · Meta · Nvidia</div>
+        <div class="tier-card__asks"><span class="tier-yes">✓✓✓ EDA + system design</span></div>
+        <div class="tier-card__detail">"Design an automated EDA pipeline for a 500M-row dataset." Discuss Spark vs pandas, schema drift detection, feature monitoring in production, and anomaly alerting for data pipelines.</div>
+        <div class="tier-card__salary">Fresher CTC 2025: ₹30 – 90 LPA+ (ML/SWE)</div>
+      </div>
+    </div>
+
+    <div class="honest-note">
+      <strong>Honest reality:</strong>
+      CTC ranges are for IIT/NIT/BITS/top private placements (2024–25 cycle). Tier-2/3 colleges: 30–50% lower.
+      EDA is tested more heavily in <strong>Data Analyst</strong> roles than ML Engineer roles —
+      and DA roles are 8–10× more available to freshers. Nail EDA and your interview conversion rate for any data role goes up significantly.
+    </div>
+
+    <!-- 3.2 — Interview Questions ─────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:3rem;">The Interview Questions</div>
+    <h2 class="section-title">5 questions. Exact scripts. What they are actually testing.</h2>
+    <div class="section-body">
+      <p>These are EDA questions asked at the companies above.
+        Each answer is a 30–45 second script. Click to expand.</p>
+    </div>
+
+    <div class="interview-qs">
+
+      <!-- Q1 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q1</span>
+          <span class="iq-q__text">Walk me through how you would do EDA on a new dataset you have never seen before.</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">All Tiers</span>
+            <span class="iq-badge iq-badge--tests">Tests: do you have a repeatable process?</span>
+          </div>
+          <strong>What they want:</strong> A systematic process, not ad-hoc exploration. They want to see you have a mental checklist.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (40 seconds)</span>
+            <div class="iq-script__text">
+              "I start with shape and dtypes — how many rows, columns, and what type is each feature.
+              Then I run isnull().sum() to map the missing data. Then describe() to see count, mean, std, and especially the min and max — the max is where outliers hide.
+              <strong>I look for anything that breaks common sense: negative ages, delivery times of 9999 minutes, salary of 0.</strong>
+              Then I plot histograms for each numeric feature — this reveals skewness and bimodal distributions that describe() cannot.
+              Finally I build a correlation matrix to spot multicollinearity and find which features actually correlate with the target.
+              <strong>The whole process takes 1–2 hours. It saves days of debugging later.</strong>"
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "What automated tools do you know?" — Answer: ydata-profiling (formerly pandas-profiling) generates a complete HTML report in one line: <code>ProfileReport(df).to_file("report.html")</code>. Also sweetviz for comparing train vs test distributions. These are for quick audits — they do not replace manual EDA for domain-specific insight.
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q2</span>
+          <span class="iq-q__text">The mean delivery time is 45 min but the median is 28 min. What does this tell you?</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">India Product · MNC Product</span>
+            <span class="iq-badge iq-badge--tests">Tests: do you understand skewness?</span>
+          </div>
+          <strong>What they want:</strong> You to name the shape (right-skewed), explain why it happens, and know the correct measure of central tendency.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (35 seconds)</span>
+            <div class="iq-script__text">
+              "Mean of 45, median of 28 tells me the data is <strong>right-skewed</strong> — a handful of extreme late deliveries are pulling the mean up,
+              but most deliveries actually complete around 28 minutes. The median is the honest number here.
+              <strong>I would report 'typical delivery time: 28 min' to the business, not 45.</strong>
+              I would also investigate what's causing those extreme values — data errors, special order types, specific locations?
+              And before feeding this to a linear model, I would apply a log transform to pull the distribution toward normality."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "How do you quantify skewness?" — Answer: <code>df['delivery_time'].skew()</code>. Positive value = right-skewed. Rule of thumb: |skewness| &gt; 1 is significantly non-normal. Between 0.5 and 1 is moderate. Below 0.5 is roughly symmetric.
+          </div>
+        </div>
+      </div>
+
+      <!-- Q3 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q3</span>
+          <span class="iq-q__text">How do you detect outliers? And what do you do after detecting them?</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">India Product · Big Tech</span>
+            <span class="iq-badge iq-badge--tests">Tests: detection AND decision process</span>
+          </div>
+          <strong>What they want:</strong> Two-phase answer — detect first, decide second. Most candidates only answer half.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (45 seconds)</span>
+            <div class="iq-script__text">
+              "I use the IQR method: compute Q1 and Q3, then IQR = Q3 − Q1. The fences are Q1 − 1.5×IQR (lower) and Q3 + 1.5×IQR (upper).
+              <strong>Anything outside these fences is a candidate outlier. I also use boxplots visually — the dots outside the whiskers are the outliers.</strong>
+              But detecting is step one. Step two is understanding WHY: is it a data entry error like a delivery time of 9,999 minutes?
+              A genuine extreme case — a 3-hour delivery to a remote location?
+              Or a system placeholder — 0 or 9999 meaning 'unknown'?
+              <strong>The answer determines the fix:</strong> cap it at the fence, set it to NaN and impute, add a binary 'was_outlier' flag,
+              or keep it if it's real. I never drop outliers without understanding what they represent."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "When would you use z-score instead of IQR?" — Answer: z-score (|z| &gt; 3) works well for normally distributed features. IQR is better for skewed distributions — it is not pulled by the same extreme values you are trying to flag. In practice, use IQR by default unless you have confirmed normality.
+          </div>
+        </div>
+      </div>
+
+      <!-- Q4 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q4</span>
+          <span class="iq-q__text">Correlation between study_hours and first_salary is 0.84. Does more studying cause higher salary?</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">India Product · Big Tech</span>
+            <span class="iq-badge iq-badge--tests">Tests: do you confuse correlation with causation?</span>
+          </div>
+          <strong>What they want:</strong> You to firmly say no — and explain confounders. This is a classic trap.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (35 seconds)</span>
+            <div class="iq-script__text">
+              "No. Correlation of 0.84 means they move together, but it does not mean studying causes the salary.
+              <strong>A confounder could explain both</strong> — students who study more may also attend better colleges,
+              live in metro cities, or have higher conscientiousness — all of which independently raise salary.
+              The ice cream and drowning deaths example: both correlate, both are driven by summer heat, neither causes the other.
+              <strong>To establish causation I would need a controlled experiment</strong> — randomly assign study hours to comparable students.
+              In ML, I use this correlation as a signal that study_hours is a useful feature — I report it as 'associated with', not 'causes'."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "What's the difference between Pearson and Spearman correlation?" — Answer: Pearson measures the strength of a LINEAR relationship. Spearman measures whether as one variable goes up, the other tends to go up — regardless of whether that relationship is linear. Use Spearman when features have outliers or non-linear relationships.
+          </div>
+        </div>
+      </div>
+
+      <!-- Q5 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q5</span>
+          <span class="iq-q__text">Two features in your dataset are correlated at r=0.97. What do you do?</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">India Product · Big Tech</span>
+            <span class="iq-badge iq-badge--tests">Tests: do you know multicollinearity and when it matters?</span>
+          </div>
+          <strong>What they want:</strong> You to know that multicollinearity matters for linear models but not trees — and offer concrete fixes.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (40 seconds)</span>
+            <div class="iq-script__text">
+              "r=0.97 is very high multicollinearity — the two features carry nearly identical information.
+              <strong>My response depends on the model.</strong>
+              For a linear or logistic regression, this inflates the variance of both coefficients —
+              small changes in data cause large swings in the coefficients, making the model unstable and uninterpretable.
+              I check VIF: if VIF is above 10, I drop one feature or use Ridge regression which handles this via L2 regularisation.
+              <strong>For tree models — Random Forest, XGBoost — multicollinearity does not affect predictive performance</strong>
+              but it can mislead feature importance scores. Both features split credit between them,
+              so I might compute SHAP values instead of raw importances to get the true contribution."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "What is VIF?" — Answer: Variance Inflation Factor. VIF of 1 = no multicollinearity. VIF of 5 = moderate. VIF &gt; 10 = high — take action. Computed as <code>variance_inflation_factor(X.values, i)</code> from statsmodels for each feature i.
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end interview-qs -->
+
+    <!-- 3.3 — Placement Quiz ────────────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:3rem;">Placement Quiz</div>
+    <h2 class="section-title">5 questions. 30 seconds each. No help.</h2>
+    <div class="section-body">
+      <p>These are the exact style of questions asked at MNC product and India product company interviews.
+        Score 4/5 or above before moving to Topic 4.</p>
+    </div>
+
+    <div class="quiz-wrap">
+
+      <div class="quiz-start" id="quiz-start-screen">
+        <div style="font-size:3rem; margin-bottom:1rem;">🔍</div>
+        <div style="font-size:1.15rem; font-weight:600; margin-bottom:0.5rem;">Ready to test yourself?</div>
+        <p>5 placement-level EDA questions. 30 seconds per question. Explanation after every answer.</p>
+        <button class="btn btn--primary btn--lg" id="quiz-start-btn">Start Quiz →</button>
+      </div>
+
+      <div class="quiz-body" id="quiz-question-screen">
+        <div class="quiz-meta">
+          <span class="quiz-meta__progress" id="quiz-num">1 / 5</span>
+          <span class="quiz-meta__timer" id="quiz-timer-text">30s</span>
+        </div>
+        <div class="progress-bar" style="margin-bottom:1.25rem;">
+          <div class="progress-bar__fill" id="quiz-timer-bar"></div>
+        </div>
+        <div class="quiz-question" id="quiz-q-text"></div>
+        <div class="quiz-options" id="quiz-options"></div>
+        <div class="quiz-explanation" id="quiz-explanation"></div>
+        <button class="btn btn--primary" id="quiz-next-btn" style="margin-top:1.25rem; display:none;">
+          Next Question →
+        </button>
+      </div>
+
+      <div class="quiz-result" id="quiz-result-screen">
+        <div class="quiz-score-big" id="result-score">0 / 5</div>
+        <div style="font-size:2rem; font-weight:700; color:var(--teaching); margin:0.5rem 0;" id="result-pct">0%</div>
+        <div style="color:var(--text-muted); font-size:var(--t-sm); margin-bottom:2rem;" id="result-msg"></div>
+        <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+          <button class="btn btn--ghost" id="quiz-retry-btn">Retry Quiz</button>
+          <a href="/ml" class="btn btn--primary">Back to ML Track →</a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Next Topic Strip ───────────────────────────────────────────────────── -->
+<div class="next-strip">
+  <div class="container">
+    <div class="next-strip__inner">
+      <div>
+        <div class="next-strip__label">You completed Topic 03. Up next:</div>
+        <div class="next-strip__name">Topic 04 — Linear Regression</div>
+        <div style="font-size:var(--t-xs); color:var(--text-muted); margin-top:0.25rem;">
+          Cost function · Gradient Descent · OLS · Assumptions · Real predictions
+        </div>
+      </div>
+      <a href="#" class="btn btn--ghost" style="opacity:0.4; cursor:not-allowed;" aria-disabled="true">Coming Soon</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>var QUIZ_DATA = {{ quiz | tojson }};</script>
+<script src="{{ url_for('static', filename='js/ml/topic3.js') }}"></script>
+<script>
+  Abyss.Chat.init('ml-eda');
+
+  /* Reading progress bar */
+  window.addEventListener('scroll', function () {
+    var docH = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var pct  = docH > 0 ? (window.scrollY / docH) * 100 : 0;
+    var fill = document.getElementById('read-progress');
+    if (fill) fill.style.width = Math.min(pct, 100) + '%';
+  });
+
+  /* Code tabs */
+  document.querySelectorAll('.code-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var tgt = tab.dataset.tab;
+      document.querySelectorAll('.code-tab').forEach(function (t) { t.classList.toggle('code-tab--active', t.dataset.tab === tgt); });
+      document.querySelectorAll('.code-panel').forEach(function (p) { p.classList.toggle('code-panel--active', p.id === 'tab-' + tgt); });
+    });
+  });
+
+  /* Interview accordion */
+  document.querySelectorAll('.iq-q').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var item   = btn.closest('.iq-item');
+      var answer = item.querySelector('.iq-answer');
+      var isOpen = item.classList.contains('open');
+      document.querySelectorAll('.iq-item').forEach(function (i) { i.classList.remove('open'); i.querySelector('.iq-answer').classList.remove('open'); });
+      if (!isOpen) { item.classList.add('open'); answer.classList.add('open'); }
+    });
+  });
+</script>
+{% endblock %}
