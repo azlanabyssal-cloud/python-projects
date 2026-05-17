@@ -2,9 +2,9 @@
 # i made this using python
 # it can do plus minus multiply and divide
 
-print("============================")
+
 print("   Welcome to My Calculator ")
-print("============================")
+
 
 # i used while True so it keeps running until the user says stop
 while True:
@@ -33,12 +33,12 @@ while True:
         continue
 
     # now i ask for the two numbers
-    num1 = input("Enter first number: ")
-    num2 = input("Enter second number: ")
-
-    # i need to convert them from string to float so i can do math
-    num1 = float(num1)
-    num2 = float(num2)
+    try:
+        num1 = float(input("Enter first number: "))
+        num2 = float(input("Enter second number: "))
+    except ValueError:
+        print("please enter valid numbers only")
+        continue
 
     # addition
     if choice == "1":
@@ -57,7 +57,7 @@ while True:
 
     # divide
     elif choice == "4":
-        # you cant divide by zero so i check for that
+
         if num2 == 0:
             print("Error! you cant divide by zero")
         else:
@@ -65,4 +65,4 @@ while True:
             print("Result:", num1, "/", num2, "=", answer)
 
     print("")
-    print("----------------------------")
+    

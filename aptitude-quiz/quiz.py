@@ -148,14 +148,17 @@ class Quiz:
             "details": self.results
         }
 
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        results_path = os.path.join(script_dir, "results.json")
+
         history = []
-        if os.path.exists("results.json"):
-            with open("results.json", "r") as f:
+        if os.path.exists(results_path):
+            with open(results_path, "r") as f:
                 history = json.load(f)
 
         history.append(entry)
 
-        with open("results.json", "w") as f:
+        with open(results_path, "w") as f:
             json.dump(history, f, indent=4)
 
         if len(history) > 1:
