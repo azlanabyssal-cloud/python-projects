@@ -27,32 +27,28 @@ class Quiz:
 
     def get_valid_answer(self):
         while True:
-            answer = input("  Your answer (A/B/C/D): ").strip().upper()
+            answer = input("Your answer (A/B/C/D): ").strip().upper()
             if answer in ["A", "B", "C", "D"]:
                 return answer
-            print("  Invalid input. Please enter A, B, C, or D.")
+            print("Please enter A, B, C, or D only.")
 
     def run(self):
         self.reset()
         self.clear()
 
-        print("=" * 54)
-        print("          PLACEMENT APTITUDE QUIZ")
-        print("=" * 54)
-        print(f"  10 questions  |  {TIME_LIMIT} seconds per question")
-        print("  Topics: Quantitative, Logical, Verbal, Python")
-        print("=" * 54)
-        input("\n  Press Enter to start...\n")
+        print("=== Placement Aptitude Quiz ===")
+        print(f"10 questions | {TIME_LIMIT} seconds each")
+        print("Topics: Quantitative, Logical, Verbal, Python\n")
+        input("Press Enter to start...")
 
         picked = random.sample(self.questions, min(10, len(self.questions)))
 
         for i, q in enumerate(picked):
             self.clear()
-            print(f"  Q{i + 1}/10  |  Topic: {q['topic']}  |  Time Limit: {TIME_LIMIT}s")
-            print("  " + "-" * 50)
-            print(f"\n  {q['question']}\n")
+            print(f"Q{i + 1}/10  |  {q['topic']}  |  {TIME_LIMIT}s limit\n")
+            print(q["question"] + "\n")
             for option in q["options"]:
-                print(f"    {option}")
+                print("  " + option)
             print()
 
             start = time.time()
@@ -64,14 +60,14 @@ class Quiz:
 
             print()
             if is_timeout:
-                print(f"  Time up! ({elapsed}s)  |  Correct answer: {q['answer']}")
+                print(f"Time up! ({elapsed}s)  Correct: {q['answer']}")
             elif is_correct:
                 self.score += 1
-                print(f"  Correct! ({elapsed}s)")
+                print(f"Correct! ({elapsed}s)")
             else:
-                print(f"  Wrong. Correct answer: {q['answer']}")
+                print(f"Wrong. Correct answer: {q['answer']}")
 
-            print(f"  Tip: {q['explanation']}")
+            print(f"Tip: {q['explanation']}")
 
             self.results.append({
                 "topic": q["topic"],
@@ -80,7 +76,7 @@ class Quiz:
                 "time_taken": elapsed
             })
 
-            input("\n  Press Enter for next question...")
+            input("\nPress Enter for next question...")
 
         self.show_result()
         self.save_result()
@@ -89,11 +85,9 @@ class Quiz:
         self.clear()
         percentage = self.score * 10
 
-        print("=" * 54)
-        print("              YOUR RESULTS")
-        print("=" * 54)
-        print(f"\n  Score      :  {self.score} / 10")
-        print(f"  Percentage :  {percentage}%")
+        print("=== Your Results ===\n")
+        print(f"Score      : {self.score} / 10")
+        print(f"Percentage : {percentage}%")
 
         if percentage >= 80:
             status = "Excellent — Placement Ready!"
@@ -104,7 +98,7 @@ class Quiz:
         else:
             status = "Needs improvement — Don't give up!"
 
-        print(f"  Status     :  {status}")
+        print(f"Status     : {status}\n")
 
         topic_stats = {}
         for r in self.results:
@@ -115,9 +109,7 @@ class Quiz:
             if r["correct"]:
                 topic_stats[t]["correct"] += 1
 
-        print("\n  Topic-wise Performance:")
-        print("  " + "-" * 44)
-
+        print("Topic-wise:")
         weak_topics = []
         for topic, stat in topic_stats.items():
             accuracy = round(stat["correct"] / stat["total"] * 100)
@@ -128,15 +120,15 @@ class Quiz:
                 weak_topics.append(topic)
 
         if weak_topics:
-            print(f"\n  Weak Topics  :  {', '.join(weak_topics)}")
-            print("  Revise these topics before your placement interviews!")
+            print(f"\nWeak topics: {', '.join(weak_topics)}")
+            print("Revise these before your interviews!")
 
         timeouts = sum(1 for r in self.results if r["timeout"])
         avg_time = round(sum(r["time_taken"] for r in self.results) / len(self.results), 1)
 
-        print(f"\n  Avg time/question  :  {avg_time}s")
+        print(f"\nAvg time per question: {avg_time}s")
         if timeouts > 0:
-            print(f"  Timed out          :  {timeouts} question(s) — work on your speed!")
+            print(f"Timed out: {timeouts} question(s) — work on speed!")
 
         print()
 
@@ -162,11 +154,11 @@ class Quiz:
             json.dump(history, f, indent=4)
 
         if len(history) > 1:
-            print("  Your Progress (last 3 attempts):")
+            print("Your progress (last 3 attempts):")
             last_three = history[-3:]
             for idx, h in enumerate(last_three):
                 attempt_num = len(history) - len(last_three) + idx + 1
-                print(f"  Attempt {attempt_num}:  {h['score']}/10  ({h['percentage']}%)  on  {h['date']}")
+                print(f"  Attempt {attempt_num}: {h['score']}/10  ({h['percentage']}%)  on {h['date']}")
             print()
 
 
@@ -179,8 +171,8 @@ if __name__ == "__main__":
 
     while True:
         quiz.run()
-        print("  Play again? (y/n): ", end="")
+        print("Play again? (y/n): ", end="")
         choice = input().strip().lower()
         if choice != "y":
-            print("\n  Good luck with your placements!\n")
+            print("\nGood luck with your placements!\n")
             break

@@ -85,99 +85,85 @@ def run_race(numbers):
     os.system("clear" if os.name == "posix" else "cls")
     show_steps = len(numbers) <= 10
 
-    print("=" * 58)
-    print("              ALGORITHM RACE")
-    print("=" * 58)
-    print(f"\n  Input : {show_array(numbers)}")
-    print(f"  Size  : {len(numbers)} elements\n")
+    print("=== Algorithm Race ===")
+    print(f"Input: {show_array(numbers)}  ({len(numbers)} elements)\n")
 
     results = {}
 
     # Bubble Sort
-    print("  " + "-" * 54)
-    print("  BUBBLE SORT")
-    print("  " + "-" * 54)
+    print("-- Bubble Sort --")
     start = time.perf_counter()
     sorted_arr, steps, history = bubble_sort(numbers)
     elapsed = time.perf_counter() - start
 
     if show_steps:
-        print(f"  Start  : {show_array(numbers)}")
+        print(f"start  : {show_array(numbers)}")
         for i, state in enumerate(history[1:], 1):
-            print(f"  Pass {i}  : {show_array(state)}")
-    print(f"  Result : Steps = {steps}  |  Time = {elapsed:.6f}s\n")
+            print(f"pass {i}  : {show_array(state)}")
+    print(f"done   : steps = {steps}, time = {elapsed:.6f}s\n")
     results["Bubble Sort"] = {"steps": steps, "time": elapsed}
 
     # Merge Sort
-    print("  " + "-" * 54)
-    print("  MERGE SORT")
-    print("  " + "-" * 54)
+    print("-- Merge Sort --")
     start = time.perf_counter()
     sorted_arr, steps, history = merge_sort(numbers)
     elapsed = time.perf_counter() - start
 
     if show_steps:
-        print(f"  Start   : {show_array(numbers)}")
+        print(f"start   : {show_array(numbers)}")
         for i, state in enumerate(history, 1):
-            print(f"  Merge {i} : {show_array(state)}")
-    print(f"  Result  : Steps = {steps}  |  Time = {elapsed:.6f}s\n")
+            print(f"merge {i} : {show_array(state)}")
+    print(f"done    : steps = {steps}, time = {elapsed:.6f}s\n")
     results["Merge Sort"] = {"steps": steps, "time": elapsed}
 
     # Quick Sort
-    print("  " + "-" * 54)
-    print("  QUICK SORT")
-    print("  " + "-" * 54)
+    print("-- Quick Sort --")
     start = time.perf_counter()
     sorted_arr, steps, history = quick_sort(numbers)
     elapsed = time.perf_counter() - start
 
     if show_steps:
-        print(f"  Start   : {show_array(numbers)}")
+        print(f"start   : {show_array(numbers)}")
         for i, state in enumerate(history, 1):
-            print(f"  Part {i}  : {show_array(state)}")
-    print(f"  Result  : Steps = {steps}  |  Time = {elapsed:.6f}s\n")
+            print(f"part {i}  : {show_array(state)}")
+    print(f"done    : steps = {steps}, time = {elapsed:.6f}s\n")
     results["Quick Sort"] = {"steps": steps, "time": elapsed}
 
-    # Final comparison table
+    # Final results
     ranked = sorted(results.items(), key=lambda x: x[1]["steps"])
 
-    print("=" * 58)
-    print("  RACE RESULTS")
-    print("=" * 58)
-    print(f"  {'Algorithm':<16} {'Steps':>8}  {'Time':>12}  Rank")
-    print("  " + "-" * 50)
+    print("--- Results ---")
+    print(f"{'Algorithm':<14} {'Steps':>6}  {'Time':>12}  Rank")
+    print("---")
 
-    rank_label = {0: "1st  <-- WINNER", 1: "2nd", 2: "3rd"}
+    rank_label = {0: "1st  <-- winner", 1: "2nd", 2: "3rd"}
     for rank, (name, data) in enumerate(ranked):
-        print(f"  {name:<16} {data['steps']:>8}  {data['time']:>10.6f}s  {rank_label[rank]}")
+        print(f"{name:<14} {data['steps']:>6}  {data['time']:>10.6f}s  {rank_label[rank]}")
 
-    print(f"\n  Sorted : {show_array(sorted_arr)}")
-    print()
+    print(f"\nSorted: {show_array(sorted_arr)}\n")
 
 
 def get_numbers():
-    print("=" * 58)
-    print("              ALGORITHM RACE")
-    print("=" * 58)
-    print("\n  Enter integers separated by spaces")
-    print("  Press Enter to race with 10 random numbers\n")
+    print("=== Algorithm Race ===")
+    print("Enter integers separated by spaces")
+    print("Press Enter to use 10 random numbers\n")
 
-    user_input = input("  Numbers: ").strip()
+    user_input = input("Numbers: ").strip()
 
     if user_input == "":
         numbers = random.sample(range(1, 100), 10)
-        print(f"  Generated: {numbers}")
-        input("  Press Enter to start the race...")
+        print(f"Generated: {numbers}")
+        input("Press Enter to start...")
         return numbers
 
     try:
         numbers = [int(x) for x in user_input.split()]
         if len(numbers) < 2:
-            print("  Enter at least 2 numbers.")
+            print("Enter at least 2 numbers.")
             return None
         return numbers
     except ValueError:
-        print("  Only integers allowed.")
+        print("Only integers allowed.")
         return None
 
 
@@ -189,7 +175,7 @@ if __name__ == "__main__":
         if numbers:
             run_race(numbers)
 
-        print("  Race again? (y/n): ", end="")
+        print("Race again? (y/n): ", end="")
         if input().strip().lower() != "y":
-            print("\n  Happy Coding!\n")
+            print("\nHappy coding!\n")
             break

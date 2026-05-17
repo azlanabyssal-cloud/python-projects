@@ -100,7 +100,7 @@ class Stack:
         print("  TOP")
         for item in reversed(self.items):
             print(f"  | {item} |")
-        print("  -----")
+        print("  ---")
 
 
 # Queue
@@ -201,48 +201,48 @@ def clear():
 def linked_list_menu():
     ll = LinkedList()
     while True:
-        print("\n  ── LINKED LIST ──────────────────────")
+        print("\n--- Linked List ---")
         print("  1. Insert at end")
         print("  2. Insert at beginning")
         print("  3. Delete a value")
         print("  4. Search a value")
         print("  5. Display list")
-        print("  0. Back to main menu")
-        choice = input("\n  Choice: ").strip()
+        print("  0. Back")
+        choice = input("\nchoice: ").strip()
 
         if choice == "1":
-            val = input("  Value: ").strip()
+            val = input("  value: ").strip()
             ll.insert_end(val)
         elif choice == "2":
-            val = input("  Value: ").strip()
+            val = input("  value: ").strip()
             ll.insert_beginning(val)
         elif choice == "3":
-            val = input("  Value to delete: ").strip()
+            val = input("  value to delete: ").strip()
             ll.delete(val)
         elif choice == "4":
-            val = input("  Value to search: ").strip()
+            val = input("  value to search: ").strip()
             ll.search(val)
         elif choice == "5":
             ll.display()
         elif choice == "0":
             break
         else:
-            print("  Invalid choice. Enter 0-5.")
+            print("  enter 0-5")
 
 
 def stack_menu():
     stack = Stack()
     while True:
-        print("\n  ── STACK ────────────────────────────")
+        print("\n--- Stack ---")
         print("  1. Push")
         print("  2. Pop")
         print("  3. Peek")
         print("  4. Display stack")
-        print("  0. Back to main menu")
-        choice = input("\n  Choice: ").strip()
+        print("  0. Back")
+        choice = input("\nchoice: ").strip()
 
         if choice == "1":
-            val = input("  Value: ").strip()
+            val = input("  value: ").strip()
             stack.push(val)
         elif choice == "2":
             stack.pop()
@@ -253,21 +253,21 @@ def stack_menu():
         elif choice == "0":
             break
         else:
-            print("  Invalid choice. Enter 0-4.")
+            print("  enter 0-4")
 
 
 def queue_menu():
     queue = Queue()
     while True:
-        print("\n  ── QUEUE ────────────────────────────")
+        print("\n--- Queue ---")
         print("  1. Enqueue")
         print("  2. Dequeue")
         print("  3. Display queue")
-        print("  0. Back to main menu")
-        choice = input("\n  Choice: ").strip()
+        print("  0. Back")
+        choice = input("\nchoice: ").strip()
 
         if choice == "1":
-            val = input("  Value: ").strip()
+            val = input("  value: ").strip()
             queue.enqueue(val)
         elif choice == "2":
             queue.dequeue()
@@ -276,28 +276,28 @@ def queue_menu():
         elif choice == "0":
             break
         else:
-            print("  Invalid choice. Enter 0-3.")
+            print("  enter 0-3")
 
 
 def bst_menu():
     bst = BST()
     while True:
-        print("\n  ── BINARY SEARCH TREE ───────────────")
+        print("\n--- Binary Search Tree ---")
         print("  1. Insert")
         print("  2. Search")
         print("  3. Display inorder")
-        print("  0. Back to main menu")
-        choice = input("\n  Choice: ").strip()
+        print("  0. Back")
+        choice = input("\nchoice: ").strip()
 
         if choice == "1":
             try:
-                val = int(input("  Value (integer): ").strip())
+                val = int(input("  value (integer): ").strip())
                 bst.insert(val)
             except ValueError:
                 print("  BST only accepts integers.")
         elif choice == "2":
             try:
-                val = int(input("  Value to search: ").strip())
+                val = int(input("  value to search: ").strip())
                 bst.search(val)
             except ValueError:
                 print("  BST only accepts integers.")
@@ -306,23 +306,20 @@ def bst_menu():
         elif choice == "0":
             break
         else:
-            print("  Invalid choice. Enter 0-3.")
+            print("  enter 0-3")
 
 
 def main():
     while True:
         clear()
-        print("=" * 46)
-        print("           DSA PLAYGROUND")
-        print("=" * 46)
-        print("\n  Choose a Data Structure:\n")
-        print("  1. Linked List")
-        print("  2. Stack")
-        print("  3. Queue")
-        print("  4. Binary Search Tree")
-        print("  0. Exit")
+        print("=== DSA Playground ===\n")
+        print("1. Linked List")
+        print("2. Stack")
+        print("3. Queue")
+        print("4. Binary Search Tree")
+        print("0. Exit")
 
-        choice = input("\n  Choice: ").strip()
+        choice = input("\nchoice: ").strip()
 
         if choice == "1":
             linked_list_menu()
@@ -333,11 +330,11 @@ def main():
         elif choice == "4":
             bst_menu()
         elif choice == "0":
-            print("\n  Good luck with your placements!\n")
+            print("\nGood luck with your placements!\n")
             break
         else:
-            print("  Invalid choice.")
-            input("  Press Enter to continue...")
+            print("enter 0-4")
+            input("Press Enter to continue...")
 
 
 if __name__ == "__main__":
