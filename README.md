@@ -1,37 +1,55 @@
-# My Python Calculator
+# python projects
 
-i made this calculator using python as part of my learning journey
+python projects i built while learning and getting serious about placements.
+started with a calculator, ended up building sorting algorithm visualizers and data structure implementations from scratch.
 
-it took me some time to figure out the while loop and how to convert the input to float but i got it working!
+---
 
-## What it can do
+## projects
 
-- Addition
-- Subtraction
-- Multiplication
-- Division
-- it also handles divide by zero so it doesnt crash
+### calculator
 
-## How to run it
-
-make sure you have python installed first then just run this in your terminal:
+the first one. where i got comfortable with loops, input handling and type conversion.
 
 ```
 python calculator.py
 ```
 
-## How i built it
+---
 
-i used a while loop so the calculator keeps running and doesnt close after one calculation. the user picks an option from the menu and enters two numbers and then it shows the result.
+### aptitude quiz
 
-i learned about float() to convert the input because input() gives a string not a number and you cant do math with strings.
+built this for placement prep. picks 10 random questions per attempt from quant, logical, verbal and python topics. tracks time per question, shows weak topics, saves score history so you can track improvement over attempts.
 
-## What i want to add later
-
-- maybe a history that shows all past calculations
-- percentage button
-- maybe a gui someday using tkinter
+```
+cd aptitude-quiz
+python3 quiz.py
+```
 
 ---
 
-made by me while learning python :)
+### algorithm race
+
+enter any list of numbers and watch bubble sort, merge sort and quick sort compete step by step. shows every pass, total comparisons and time taken. then ranks all three.
+
+makes it very clear why O(n²) hurts on large inputs.
+
+```
+cd algorithm-race
+python3 race.py
+```
+
+---
+
+### dsa playground
+
+built linked list, stack, queue and binary search tree from scratch using OOP. interactive menu for each structure — insert, delete, search, display. the bst search shows exactly how many steps it took to find a value.
+
+```
+cd dsa-playground
+python3 playground.py
+```
+
+---
+
+built by azlan — B.Tech CSE (AI & ML), GPREC, Kurnool
