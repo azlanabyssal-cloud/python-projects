@@ -1,7 +1,7 @@
 import os
 
 
-# ── Linked List ────────────────────────────────────────────────────────────────
+# Linked List
 
 class Node:
     def __init__(self, data):
@@ -70,7 +70,7 @@ class LinkedList:
         print("  " + " -> ".join(elements) + " -> None")
 
 
-# ── Stack ──────────────────────────────────────────────────────────────────────
+# Stack
 
 class Stack:
     def __init__(self):
@@ -103,7 +103,7 @@ class Stack:
         print("  -----")
 
 
-# ── Queue ──────────────────────────────────────────────────────────────────────
+# Queue
 
 class Queue:
     def __init__(self):
@@ -127,7 +127,7 @@ class Queue:
         print("  Front -> " + " -> ".join(str(x) for x in self.items) + " <- Rear")
 
 
-# ── Binary Search Tree ─────────────────────────────────────────────────────────
+# Binary Search Tree
 
 class BSTNode:
     def __init__(self, data):
@@ -192,7 +192,7 @@ class BST:
         print(f"  Inorder (sorted): {result}")
 
 
-# ── Menus ──────────────────────────────────────────────────────────────────────
+# Menus
 
 def clear():
     os.system("clear" if os.name == "posix" else "cls")
@@ -333,7 +333,7 @@ def main():
         elif choice == "4":
             bst_menu()
         elif choice == "0":
-            print("\n  Happy Coding!\n")
+            print("\n  Good luck with your placements!\n")
             break
         else:
             print("  Invalid choice.")
