@@ -1,7 +1,6 @@
 # python projects
 
-python projects i built while learning and getting serious about placements.
-started with a calculator, ended up building sorting algorithm visualizers and data structure implementations from scratch.
+a bunch of python projects i built while learning. started with a calculator, kept going from there.
 
 ---
 
@@ -9,7 +8,7 @@ started with a calculator, ended up building sorting algorithm visualizers and d
 
 ### calculator
 
-the first one. where i got comfortable with loops, input handling and type conversion.
+the first one i built. got comfortable here with while loops, inputs and why you can't do math on strings directly.
 
 ```
 python calculator.py
@@ -19,7 +18,7 @@ python calculator.py
 
 ### aptitude quiz
 
-built this for placement prep. picks 10 random questions per attempt from quant, logical, verbal and python topics. tracks time per question, shows weak topics, saves score history so you can track improvement over attempts.
+made this for placement prep. 10 random questions each time from quant, logical, verbal and python topics. 30 seconds per question. tells you which topics you keep getting wrong and saves your history so you can see if you're improving.
 
 ```
 cd aptitude-quiz
@@ -30,9 +29,7 @@ python3 quiz.py
 
 ### algorithm race
 
-enter any list of numbers and watch bubble sort, merge sort and quick sort compete step by step. shows every pass, total comparisons and time taken. then ranks all three.
-
-makes it very clear why O(n²) hurts on large inputs.
+type in any numbers, watch bubble sort, merge sort and quick sort race each other. shows every step, how many comparisons each one made and which one won. bubble sort on a bigger list makes it very obvious why people don't use it in real life.
 
 ```
 cd algorithm-race
@@ -43,7 +40,7 @@ python3 race.py
 
 ### dsa playground
 
-built linked list, stack, queue and binary search tree from scratch using OOP. interactive menu for each structure — insert, delete, search, display. the bst search shows exactly how many steps it took to find a value.
+coded linked list, stack, queue and binary search tree myself without any libraries. each one has a menu where you can insert, delete, search and display. the bst search tells you how many steps it needed to find the value.
 
 ```
 cd dsa-playground
