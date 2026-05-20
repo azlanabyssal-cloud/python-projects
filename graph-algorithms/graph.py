@@ -1,6 +1,6 @@
 # graph algorithms in python
 # adjacency list representation
-# BFS, DFS, dijkstra shortest path, cycle detection
+# bfs, dfs, dijkstra, cycle detection
 
 import heapq
 import os
@@ -32,16 +32,15 @@ class Graph:
         if not self.adj:
             print("  graph is empty.")
             return
-        print("\n  Adjacency List:")
+        print("\n  adjacency list:")
         for v in sorted(self.adj.keys()):
             if self.adj[v]:
                 neighbors = "  ".join(f"{n}(w={w})" for n, w in sorted(self.adj[v]))
                 print(f"    {v}  ->  {neighbors}")
             else:
-                print(f"    {v}  ->  (isolated vertex)")
+                print(f"    {v}  ->  (no neighbors)")
         print()
 
-    # BFS: visits layer by layer, good for shortest path in unweighted graphs
     def bfs(self, start):
         if start not in self.adj:
             print(f"  '{start}' not in graph.")
@@ -52,12 +51,12 @@ class Graph:
         visited.add(start)
         order = []
 
-        print(f"\n  BFS from '{start}':\n")
+        print(f"\n  bfs from {start}:\n")
         level = 0
         current_level = [start]
 
         while current_level:
-            print(f"  Level {level}: {current_level}")
+            print(f"  level {level}: {current_level}")
             next_level = []
             for node in current_level:
                 order.append(node)
@@ -68,12 +67,11 @@ class Graph:
             current_level = next_level
             level += 1
 
-        print(f"\n  Visit order: {' -> '.join(str(x) for x in order)}")
+        print(f"\n  visit order: {' -> '.join(str(x) for x in order)}")
         if len(visited) < len(self.adj):
             not_reached = [v for v in self.adj if v not in visited]
-            print(f"  Note: {not_reached} not reachable from '{start}'")
+            print(f"  {not_reached} not reachable from {start}")
 
-    # DFS: goes deep before backtracking, good for cycle detection and paths
     def dfs(self, start):
         if start not in self.adj:
             print(f"  '{start}' not in graph.")
@@ -91,14 +89,13 @@ class Graph:
                 if neighbor not in visited:
                     explore(neighbor, depth + 1)
 
-        print(f"\n  DFS from '{start}':\n")
+        print(f"\n  dfs from {start}:\n")
         explore(start, 0)
-        print(f"\n  Visit order: {' -> '.join(str(x) for x in order)}")
+        print(f"\n  visit order: {' -> '.join(str(x) for x in order)}")
         if len(visited) < len(self.adj):
             not_reached = [v for v in self.adj if v not in visited]
-            print(f"  Note: {not_reached} not reachable from '{start}'")
+            print(f"  {not_reached} not reachable from {start}")
 
-    # dijkstra: finds shortest path in weighted graph using a min-heap
     def dijkstra(self, start):
         if start not in self.adj:
             print(f"  '{start}' not in graph.")
@@ -120,7 +117,7 @@ class Graph:
                     prev[neighbor] = node
                     heapq.heappush(heap, (new_dist, neighbor))
 
-        print(f"\n  Shortest distances from '{start}':\n")
+        print(f"\n  shortest distances from {start}:\n")
         for v in sorted(dist.keys()):
             if v == start:
                 continue
@@ -136,9 +133,6 @@ class Graph:
                 print(f"    {v}:  distance = {dist[v]}   path = {' -> '.join(path)}")
         print()
 
-    # cycle detection using DFS
-    # directed graph: checks if there's a back edge (node visited in current recursion path)
-    # undirected graph: checks if a neighbor is visited but is not the parent
     def has_cycle(self):
         if not self.adj:
             print("  graph is empty.")
@@ -164,10 +158,10 @@ class Graph:
             for v in self.adj:
                 if v not in visited:
                     if dfs_cycle(v):
-                        print("  cycle found — this is a directed graph with a cycle.")
+                        print("  cycle found.")
                         return
 
-            print("  no cycle. this is a DAG (directed acyclic graph).")
+            print("  no cycle found.")
 
         else:
             def dfs_cycle(node, parent):
@@ -183,14 +177,14 @@ class Graph:
             for v in self.adj:
                 if v not in visited:
                     if dfs_cycle(v, None):
-                        print("  cycle found in the graph.")
+                        print("  cycle found.")
                         return
 
-            print("  no cycle found — this is a tree or forest.")
+            print("  no cycle found.")
 
 
 def load_sample(graph):
-    # sample graph: 5 cities connected with distances
+    # 5 cities with weighted roads between them
     for city in ["A", "B", "C", "D", "E"]:
         graph.add_vertex(city)
     graph.add_edge("A", "B", 4)
@@ -224,13 +218,11 @@ def main():
         print("  3. Add vertex")
         print("  4. Add edge")
         print("  5. Show graph")
-        print("  ---")
         print("  6. BFS traversal")
         print("  7. DFS traversal")
         print("  8. Dijkstra shortest path")
         print("  9. Detect cycle")
-        print("  ---")
-        print("  s. Load sample graph (5 cities)")
+        print("  s. Load sample graph")
         print("  0. Exit\n")
 
         choice = input("  Choice: ").strip().lower()
