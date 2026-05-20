@@ -49,4 +49,15 @@ python3 playground.py
 
 ---
 
+### graph algorithms
+
+built a graph from scratch using adjacency list. you can add vertices and edges, then run BFS, DFS, dijkstra's shortest path, and cycle detection on it. supports both directed and undirected graphs. comes with a sample graph loaded in one key so you can see everything working immediately.
+
+```
+cd graph-algorithms
+python3 graph.py
+```
+
+---
+
 built by azlan — B.Tech CSE (AI & ML), GPREC, Kurnool
