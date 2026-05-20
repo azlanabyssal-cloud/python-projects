@@ -60,4 +60,15 @@ python3 graph.py
 
 ---
 
+### maze solver
+
+generates a random maze and solves it two ways — BFS finds the shortest path, DFS finds the first path it can. shows both side by side so you can see how many steps each one wasted. built this right after the graph project to actually apply BFS and DFS on something visual.
+
+```
+cd maze-solver
+python3 maze.py
+```
+
+---
+
 built by azlan — B.Tech CSE (AI & ML), GPREC, Kurnool
