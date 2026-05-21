@@ -60,6 +60,17 @@ python3 graph.py
 
 ---
 
+### dsa patterns
+
+not another tutorial. this one teaches you how to think — pattern recognition is the actual skill that decides if you pass or fail a placement DSA round. covers 7 patterns: two pointers, sliding window, binary search, hashmap, stack, bfs on grid, and dp. each one shows when to use it, how to think through a problem, the code, and running output. ends with a quiz where you have to identify the right pattern from a problem description.
+
+```
+cd dsa-patterns
+python3 patterns.py
+```
+
+---
+
 ### maze solver
 
 generates a random maze and solves it two ways — BFS finds the shortest path, DFS finds the first path it can. shows both side by side so you can see how many steps each one wasted. built this right after the graph project to actually apply BFS and DFS on something visual.
