@@ -1,0 +1,1282 @@
+{% extends 'base.html' %}
+{% block title %}Data & Preprocessing — Abyss{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<style>
+  /* ── Animation tab bar ─────────────────────────── */
+  .anim-tab { padding:0.45rem 1.1rem; border-radius:var(--radius-sm); border:1px solid var(--border-strong); background:transparent; color:var(--text-muted); font-size:var(--t-sm); font-weight:500; cursor:pointer; transition:all 0.15s; font-family:var(--font); }
+  .anim-tab:hover { border-color:var(--primary-border); color:var(--primary); }
+  .anim-tab--active { background:var(--primary-glow); border-color:var(--primary-border); color:var(--primary); font-weight:600; }
+
+  /* ── Layer banners ──────────────────────────────── */
+  .anim-status { margin-top:0.75rem; min-height:1.4em; font-size:var(--t-xs); color:var(--text-muted); font-style:italic; letter-spacing:0.2px; }
+  .layer-banner { display:flex; align-items:center; gap:1rem; padding:0.6rem 1.5rem; border-left:3px solid; font-size:var(--t-xs); font-weight:700; letter-spacing:2px; text-transform:uppercase; background:var(--bg-surface); border-radius:0 var(--radius-sm) var(--radius-sm) 0; margin-bottom:2.5rem; }
+  .layer-banner span { color:var(--text-muted); font-weight:400; letter-spacing:0; text-transform:none; font-size:11px; }
+  .layer-banner--1 { border-color:var(--primary); color:var(--primary); }
+  .layer-banner--2 { border-color:var(--teaching); color:var(--teaching); }
+  .layer-banner--3 { border-color:var(--warning); color:var(--warning); }
+
+  /* ── Syntax colours ─────────────────────────────── */
+  .kw { color:#818cf8; } .cm { color:#4b5563; font-style:italic; } .st { color:#22d3ee; } .nm { color:#f59e0b; } .fn { color:#22c55e; }
+
+  /* ── Interview accordion ─────────────────────────── */
+  .iq-item { border-bottom:1px solid var(--border); padding:var(--s-5) 0; }
+  .iq-item:last-child { border-bottom:none; }
+  .iq-q { display:flex; gap:var(--s-4); align-items:flex-start; cursor:pointer; user-select:none; }
+  .iq-q__num { font-family:var(--font-code); font-size:var(--t-sm); color:var(--teaching); font-weight:700; flex-shrink:0; padding-top:2px; }
+  .iq-q__text { font-size:var(--t-base); font-weight:500; color:var(--text-primary); line-height:1.5; flex:1; }
+  .iq-q__arrow { color:var(--text-muted); font-size:0.75rem; flex-shrink:0; padding-top:4px; transition:transform 0.2s; }
+  .iq-item.open .iq-q__arrow { transform:rotate(90deg); }
+  .iq-answer { display:none; padding:var(--s-4) 0 0 0; font-size:var(--t-sm); color:var(--text-secondary); line-height:1.8; }
+  .iq-answer.open { display:block; }
+  .iq-answer strong { color:var(--text-primary); }
+
+  /* ── Reading progress bar ────────────────────────── */
+  .topic-progress-bar { position:fixed; top:var(--nav-height); left:0; right:0; height:2px; background:var(--border); z-index:100; }
+  .topic-progress-bar__fill { height:100%; background:linear-gradient(90deg,var(--primary),var(--teaching)); width:0%; transition:width 0.3s; }
+
+  /* ── Creature mascot ─────────────────────────────── */
+  .creature-wrap { position:absolute; bottom:4px; right:8px; z-index:20; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
+  .creature-svg { width:90px; height:90px; animation:creature-float 3.5s ease-in-out infinite; cursor:pointer; filter:drop-shadow(0 4px 14px rgba(99,102,241,0.4)); pointer-events:auto; }
+  .creature-bubble { background:var(--bg-surface); border:1px solid var(--border-strong); border-radius:12px; padding:0.45rem 0.8rem; font-size:11px; line-height:1.45; color:var(--text-primary); max-width:185px; text-align:center; margin-bottom:0.35rem; opacity:0; transform:translateY(8px) scale(0.94); transition:opacity 0.22s,transform 0.22s; pointer-events:none; }
+  .creature-bubble.visible { opacity:1; transform:translateY(0) scale(1); }
+  .creature-excited   { animation:creature-bounce 0.55s ease-in-out !important; }
+  .creature-celebrate { animation:creature-spin   0.9s  ease-in-out !important; }
+  .creature-thinking  { animation:creature-tilt   1.1s  ease-in-out !important; }
+
+  /* ── Data Hospital table ─────────────────────────── */
+  .data-hospital-table { width:100%; border-collapse:collapse; font-size:var(--t-sm); }
+  .dh-th { padding:0.5rem 0.75rem; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); border-bottom:1px solid var(--border); text-align:left; }
+  .dh-td { padding:0.5rem 0.75rem; border-bottom:1px solid var(--border); color:var(--text-secondary); font-family:var(--font-code); font-size:13px; transition:background 0.2s; white-space:nowrap; }
+  .dh-tr:hover .dh-td { background:rgba(99,102,241,0.03); }
+  .dh-td--bad { color:#ef4444; background:rgba(239,68,68,0.07); border:1px solid rgba(239,68,68,0.22); cursor:pointer; }
+  .dh-td--bad:hover { background:rgba(239,68,68,0.14); }
+  .dh-td--fixed { color:#22c55e; background:rgba(34,197,94,0.07); border:1px solid rgba(34,197,94,0.22); cursor:default; }
+  .dh-flag { font-size:0.78em; margin-left:0.2rem; }
+  .dh-info { margin-top:1rem; padding:1rem 1.25rem; background:var(--bg-elevated); border:1px solid var(--border-strong); border-radius:var(--radius-sm); }
+  .dh-info__header { font-size:var(--t-sm); font-weight:700; margin-bottom:0.5rem; }
+  .dh-info__body { font-size:var(--t-sm); color:var(--text-secondary); line-height:1.7; }
+  .dh-before { background:rgba(239,68,68,0.12); color:#ef4444; padding:0.18rem 0.5rem; border-radius:4px; font-size:var(--t-xs); font-family:var(--font-code); }
+  .dh-after  { background:rgba(34,197,94,0.12); color:#22c55e; padding:0.18rem 0.5rem; border-radius:4px; font-size:var(--t-xs); font-family:var(--font-code); }
+
+  /* ── Missing values grid ─────────────────────────── */
+  .mv-grid { display:flex; flex-wrap:wrap; gap:0.45rem; margin:1rem 0; }
+  .mv-cell { min-width:58px; padding:0.6rem 0.4rem; border-radius:var(--radius-sm); border:1px solid var(--border); text-align:center; font-family:var(--font-code); font-size:13px; font-weight:600; transition:all 0.3s; }
+  .mv-cell--ok      { background:var(--bg-elevated); color:var(--text-primary); }
+  .mv-cell--missing { background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.4); color:#ef4444; }
+  .mv-cell--filled  { background:rgba(34,211,238,0.1); border-color:rgba(34,211,238,0.4); color:#22d3ee; }
+  .mv-cell--dropped { background:rgba(107,114,128,0.08); border-color:rgba(107,114,128,0.25); color:#6b7280; }
+  .mv-day  { font-size:9px; color:var(--text-muted); font-weight:400; font-family:var(--font); display:block; margin-top:0.15rem; }
+  .mv-stat { font-family:var(--font-code); font-size:var(--t-xs); color:var(--teaching); padding:0.5rem 0.75rem; background:rgba(34,211,238,0.07); border-radius:var(--radius-sm); margin-top:0.25rem; }
+
+  /* ── Feature scaling controls ────────────────────── */
+  .fs-btn { padding:0.45rem 1rem; border-radius:var(--radius-sm); border:1px solid var(--border-strong); background:transparent; color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; font-family:var(--font-code); transition:all 0.15s; }
+  .fs-btn:hover { border-color:var(--primary-border); color:var(--primary); }
+  .fs-btn--active { background:var(--primary-glow); border-color:var(--primary-border); color:var(--primary); }
+
+  /* ── Encoding tabs ───────────────────────────────── */
+  .enc-tab-row { display:flex; gap:0; }
+  .enc-tab { padding:0.45rem 1rem; border:1px solid var(--border-strong); border-bottom:none; background:var(--bg-elevated); color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; font-family:var(--font-code); transition:all 0.15s; }
+  .enc-tab:first-child { border-radius:var(--radius-sm) 0 0 0; }
+  .enc-tab--active { background:var(--bg-surface); color:var(--primary); border-color:var(--primary-border); }
+  .enc-table-wrap { overflow-x:auto; }
+  .enc-table { border-collapse:collapse; width:100%; font-size:var(--t-sm); border:1px solid var(--border); border-top:none; }
+  .enc-th { padding:0.45rem 0.75rem; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.7px; color:var(--text-muted); border-bottom:1px solid var(--border); text-align:center; background:var(--bg-surface); white-space:nowrap; }
+  .enc-td { padding:0.45rem 0.75rem; border-bottom:1px solid var(--border); text-align:center; font-family:var(--font-code); font-size:12px; color:var(--text-secondary); }
+  .enc-td--one { background:rgba(34,211,238,0.08); color:#22d3ee; font-weight:700; }
+  .enc-td--zero { color:#374151; }
+  .enc-td--label { color:#f59e0b; font-weight:700; }
+
+  /* ── 3-level code tabs ───────────────────────────── */
+  .code-tabs { display:flex; gap:0; flex-wrap:wrap; }
+  .code-tab { padding:0.5rem 1.1rem; border:1px solid var(--border-strong); border-bottom:none; background:var(--bg-elevated); color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; font-family:var(--font-code); transition:all 0.15s; }
+  .code-tab:first-child { border-radius:var(--radius-sm) 0 0 0; }
+  .code-tab--active { background:var(--bg-surface); color:var(--primary); border-color:var(--primary-border); }
+  .code-panel { display:none; }
+  .code-panel--active { display:block; }
+  .code-panel .code-block { border-top-left-radius:0; margin-top:0; }
+
+  /* ── ML Pipeline ─────────────────────────────────── */
+  .pipeline { display:flex; align-items:stretch; gap:0; flex-wrap:wrap; margin:1.5rem 0 0.5rem; }
+  .pipe-step { padding:0.75rem 0.65rem; background:var(--bg-elevated); border:1px solid var(--border); flex:1; min-width:82px; text-align:center; }
+  .pipe-step__icon { font-size:1.4rem; line-height:1; }
+  .pipe-step__name { font-size:10px; font-weight:700; color:var(--text-primary); margin-top:0.3rem; }
+  .pipe-step__note { font-size:8.5px; color:var(--text-muted); margin-top:0.2rem; line-height:1.35; }
+  .pipe-step--hot  { border-color:var(--teaching); background:rgba(34,211,238,0.06); }
+  .pipe-arrow { color:var(--text-muted); font-size:0.9rem; display:flex; align-items:center; padding:0 0.1rem; flex-shrink:0; }
+
+  /* ── Scale cards ─────────────────────────────────── */
+  .scale-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:1rem; margin-top:1.5rem; }
+  .scale-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem; }
+  .scale-card__company { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:0.4rem; }
+  .scale-card__metric  { font-size:1.75rem; font-weight:800; color:var(--primary); line-height:1; margin-bottom:0.3rem; }
+  .scale-card__label   { font-size:11.5px; color:var(--text-secondary); line-height:1.5; }
+
+  /* ── Placement tier map ──────────────────────────── */
+  .tier-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(195px,1fr)); gap:0.75rem; margin-top:1.25rem; }
+  .tier-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem; }
+  .tier-card--service { border-left:3px solid #4b5563; }
+  .tier-card--mnc     { border-left:3px solid #f59e0b; }
+  .tier-card--product { border-left:3px solid #22d3ee; }
+  .tier-card--bigtech { border-left:3px solid #818cf8; }
+  .tier-card__name      { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:0.35rem; }
+  .tier-card__companies { font-size:11px; color:var(--text-secondary); margin-bottom:0.45rem; line-height:1.45; }
+  .tier-card__asks      { font-size:11.5px; font-weight:600; color:var(--text-primary); margin-bottom:0.3rem; }
+  .tier-card__detail    { font-size:11px; color:var(--text-secondary); line-height:1.5; margin-bottom:0.5rem; }
+  .tier-card__salary    { font-size:10px; color:var(--text-muted); padding-top:0.5rem; border-top:1px solid var(--border); }
+  .tier-no  { color:#6b7280; }
+  .tier-yes { color:#22c55e; }
+
+  /* ── Expanded interview format ───────────────────── */
+  .iq-badges { margin-bottom:0.55rem; }
+  .iq-badge { display:inline-block; font-size:9px; font-weight:700; padding:0.18rem 0.55rem; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; margin-right:0.35rem; }
+  .iq-badge--tier  { background:rgba(99,102,241,0.15); color:#818cf8; }
+  .iq-badge--tests { background:rgba(34,211,238,0.12); color:#22d3ee; }
+  .iq-script { background:var(--bg-elevated); border-left:3px solid var(--teaching); border-radius:0 var(--radius-sm) var(--radius-sm) 0; padding:0.85rem 1rem; margin:0.75rem 0 0.6rem; }
+  .iq-script__label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--teaching); display:block; margin-bottom:0.4rem; }
+  .iq-script__text  { font-size:var(--t-sm); color:var(--text-secondary); line-height:1.75; font-style:italic; }
+  .iq-script__text strong { color:var(--text-primary); font-style:normal; }
+  .iq-followup { font-size:var(--t-xs); color:var(--text-muted); padding:0.5rem 0.8rem; border:1px solid var(--border); border-radius:var(--radius-sm); }
+  .iq-followup strong { color:var(--warning); }
+  .honest-note { font-size:var(--t-xs); color:var(--text-muted); padding:0.7rem 1rem; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-elevated); line-height:1.65; margin-top:0.75rem; }
+  .honest-note strong { color:var(--warning); }
+  /* ── Coding Practice ──────────────────────────────────────────────────── */
+  .coding-probs { margin-top:1.25rem; }
+  .cp-item { border-bottom:1px solid var(--border); }
+  .cp-item:last-child { border-bottom:none; }
+  .cp-hdr { display:flex; justify-content:space-between; align-items:flex-start; padding:1rem 0; cursor:pointer; user-select:none; gap:0.75rem; }
+  .cp-left { display:flex; gap:0.75rem; align-items:flex-start; flex:1; min-width:0; }
+  .cp-num { flex-shrink:0; font-size:var(--t-xs); font-weight:700; color:var(--text-muted); padding-top:0.12rem; min-width:1.8rem; }
+  .cp-titles { flex:1; min-width:0; }
+  .cp-title { font-size:var(--t-sm); font-weight:700; color:var(--text-primary); }
+  .cp-meta { font-size:var(--t-xs); color:var(--text-muted); margin-top:0.2rem; }
+  .cp-right { display:flex; gap:0.55rem; align-items:center; flex-shrink:0; }
+  .cp-diff { font-size:10px; font-weight:700; padding:0.15rem 0.5rem; border-radius:4px; white-space:nowrap; }
+  .cp-diff--easy   { background:rgba(74,222,128,0.12); color:#4ade80; }
+  .cp-diff--medium { background:rgba(251,191,36,0.12); color:#fbbf24; }
+  .cp-diff--hard   { background:rgba(239,68,68,0.12); color:#ef4444; }
+  .cp-arrow { color:var(--text-muted); transition:transform 0.2s; }
+  .cp-item.cp-open .cp-arrow { transform:rotate(90deg); }
+  .cp-body { display:none; padding-bottom:1.25rem; padding-left:2.6rem; }
+  .cp-item.cp-open .cp-body { display:block; }
+  .cp-task { font-size:var(--t-sm); color:var(--text-secondary); line-height:1.75; margin-bottom:0.75rem; }
+  .cp-task strong { color:var(--text-primary); }
+  .cp-task ul { margin:0.4rem 0 0 1.25rem; }
+  .cp-task li { margin-bottom:0.25rem; }
+  .cp-constraint { font-size:var(--t-xs); color:#fb923c; font-weight:600; margin-top:0.55rem; border:1px solid rgba(251,146,60,0.3); border-radius:4px; padding:0.35rem 0.65rem; background:rgba(251,146,60,0.04); }
+  .cp-reveal-btn { padding:0.42rem 1rem; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--bg-elevated); color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; transition:all 0.15s; }
+  .cp-reveal-btn:hover { border-color:var(--primary); color:var(--primary); }
+  .cp-sol { display:none; margin-top:0.75rem; }
+  .cp-mistake { font-size:var(--t-xs); color:var(--text-muted); padding:0.55rem 0.85rem; border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-sm); background:rgba(239,68,68,0.04); margin-top:0.55rem; line-height:1.65; }
+  .cp-mistake strong { color:#ef4444; }
+  .cp-mistake ul { margin:0.3rem 0 0 1rem; padding:0; }
+  .cp-mistake li { margin-bottom:0.2rem; }
+  .iq-redflag { font-size:var(--t-xs); color:var(--text-muted); padding:0.55rem 0.85rem; border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-sm); background:rgba(239,68,68,0.04); margin-top:0.55rem; line-height:1.65; }
+  .iq-redflag strong { color:#ef4444; }
+  .iq-redflag ul { margin:0.3rem 0 0 1rem; padding:0; }
+  .iq-redflag li { margin-bottom:0.25rem; }
+
+  /* ── Keyframes ──────────────────────────────────── */
+  @keyframes creature-float  { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-9px);} }
+  @keyframes creature-bounce { 0%,100%{transform:scale(1) rotate(0deg);} 25%{transform:scale(1.2) rotate(-10deg);} 75%{transform:scale(1.2) rotate(10deg);} }
+  @keyframes creature-spin   { 0%{transform:scale(1) rotate(0deg);} 50%{transform:scale(1.22) rotate(180deg);} 100%{transform:scale(1) rotate(360deg);} }
+  @keyframes creature-tilt   { 0%,100%{transform:rotate(0deg);} 25%{transform:rotate(-14deg);} 75%{transform:rotate(14deg);} }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="topic-progress-bar">
+  <div class="topic-progress-bar__fill" id="read-progress"></div>
+</div>
+
+<!-- ── Topic Header ─────────────────────────────────────────────────────── -->
+<div class="topic-header" style="padding-top: calc(var(--nav-height) + 3rem);">
+  <div class="container">
+    <div class="topic-header__track">Machine Learning Track</div>
+    <div class="topic-header__num">Level 01: Foundation &nbsp;·&nbsp; Topic 02 of 52</div>
+    <h1 class="topic-header__title">Data &amp; Preprocessing</h1>
+    <p class="topic-header__sub">
+      The most important step nobody teaches properly. Bad data breaks every algorithm. Fix data first.
+    </p>
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-top:1.25rem; flex-wrap:wrap;">
+      <span class="badge badge--primary">Level 01</span>
+      <span class="badge badge--muted">Foundation</span>
+      <span class="badge badge--muted">~20 min</span>
+      <span class="badge badge--teaching">3 Layers</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     LAYER 1 — SIMPLE & EASY
+     ══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="topic-section">
+  <div class="container">
+
+    <div class="layer-banner layer-banner--1">
+      Layer 1 — Simple &amp; Easy
+      <span>understand the core rule in 60 seconds</span>
+    </div>
+
+    <div class="section-label">The Golden Rule of ML</div>
+    <h2 class="section-title">Garbage In, Garbage Out. Every time.</h2>
+    <div class="section-body">
+      <p>The best algorithm in the world cannot fix bad data. A model trained on noisy,
+        inconsistent, or missing data will confidently produce wrong answers. There is no shortcut.
+        Data quality is not a preprocessing step — it is the foundation every model sits on.</p>
+
+      <p style="margin-top:1rem;">
+        Real ML engineers at Swiggy, Flipkart, and Google spend <strong>60–80% of their time</strong>
+        cleaning and preparing data. The model itself — the part tutorials spend 100% of time on —
+        is typically 20% of the work. Know this before your first interview.
+      </p>
+
+      <p style="margin-top:1rem;">
+        Four problems destroy every dataset: <strong>Missing values</strong> (NaN crashes most algorithms),
+        <strong>Outliers</strong> (one bad row skews statistics for millions),
+        <strong>Inconsistent encoding</strong> (same value stored differently creates phantom categories),
+        <strong>Unscaled features</strong> (large values dominate distance-based models).
+        Preprocessing is fixing all four before training begins.
+      </p>
+    </div>
+
+    <div class="highlight-card" style="margin-top:2rem;">
+      <h4>Why it matters at scale — the Flipkart incident type</h4>
+      <p>
+        A single corrupted row in a training dataset with 150 million products can shift
+        the model's weights enough to misrank entire product categories.
+        Netflix estimated that recommendation errors from bad training data cost millions in
+        subscriber churn before systematic data validation pipelines were built.
+        <strong>Data validation runs before every training job at every major tech company.</strong>
+        It is not optional.
+      </p>
+    </div>
+
+    <!-- Interactive: Data Hospital ──────────────────────────────────────── -->
+    <div class="anim-box" style="margin-top:2.5rem;">
+      <div class="anim-box__title">A real restaurant dataset. Five hidden problems.</div>
+      <div class="anim-box__desc">
+        Click any highlighted cell to diagnose the problem. Read the explanation. Then fix it.
+        This is what data cleaning looks like before any ML algorithm runs.
+      </div>
+
+      <div id="dh-wrapper" style="position:relative;">
+        <div id="dh-canvas" style="background:var(--bg-void); border-radius:var(--radius-sm); border:1px solid var(--border); padding:1rem; min-height:240px; overflow-x:auto;"></div>
+      </div>
+    </div>
+
+    <!-- Summary cards ────────────────────────────────────────────────────── -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-top:2rem;">
+      <div style="padding:1rem; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm);">
+        <div style="font-size:var(--t-xs); font-weight:700; color:#ef4444; margin-bottom:0.4rem;">MISSING VALUES</div>
+        <div style="font-size:var(--t-sm); color:var(--text-secondary); line-height:1.65;">
+          NaN in any cell crashes most sklearn algorithms by default.
+          <br><br><em style="color:var(--text-muted);">Fix: mean, median, mode imputation, or drop row if &lt;5% missing.</em>
+        </div>
+      </div>
+      <div style="padding:1rem; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm);">
+        <div style="font-size:var(--t-xs); font-weight:700; color:#f59e0b; margin-bottom:0.4rem;">OUTLIERS</div>
+        <div style="font-size:var(--t-sm); color:var(--text-secondary); line-height:1.65;">
+          One value of 9999 shifts the mean from 31 to 1,400. Ruins all statistics.
+          <br><br><em style="color:var(--text-muted);">Fix: IQR method or z-score to detect, then cap or remove.</em>
+        </div>
+      </div>
+      <div style="padding:1rem; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm);">
+        <div style="font-size:var(--t-xs); font-weight:700; color:#818cf8; margin-bottom:0.4rem;">ENCODING</div>
+        <div style="font-size:var(--t-sm); color:var(--text-secondary); line-height:1.65;">
+          "MUMBAI", "mumbai", "Mumbai" = 3 phantom categories in the model's eyes.
+          <br><br><em style="color:var(--text-muted);">Fix: lowercase + strip + standardise before encoding.</em>
+        </div>
+      </div>
+      <div style="padding:1rem; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm);">
+        <div style="font-size:var(--t-xs); font-weight:700; color:#22d3ee; margin-bottom:0.4rem;">SCALING</div>
+        <div style="font-size:var(--t-sm); color:var(--text-secondary); line-height:1.65;">
+          Salary (₹6,00,000) vs age (25). Distance algorithms only "see" salary.
+          <br><br><em style="color:var(--text-muted);">Fix: StandardScaler or MinMaxScaler before training.</em>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     LAYER 2 — MASTER IN REAL
+     ══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="topic-section">
+  <div class="container">
+
+    <div class="layer-banner layer-banner--2">
+      Layer 2 — Master in Real
+      <span>the techniques · the math · the code · the scale</span>
+    </div>
+
+    <!-- 2.1 — Missing Values ─────────────────────────────────────────────── -->
+    <div class="section-label">Missing Values — The Most Common Problem</div>
+    <h2 class="section-title">Why data is missing matters more than how much is missing.</h2>
+    <div class="section-body">
+      <p>Before imputing, ask why the data is missing. <strong>MCAR</strong> (Missing Completely At Random) —
+        random server errors, safe to fill. <strong>MAR</strong> (Missing At Random) —
+        new restaurants have no ratings yet, use other columns to predict the missing value.
+        <strong>MNAR</strong> (Missing Not At Random) — low-rated restaurants delete their ratings,
+        the missingness IS the signal, encode it as a binary "was_missing" feature.</p>
+    </div>
+
+    <div class="demo-box" style="margin-top:1.5rem;">
+      <div style="font-size:var(--t-sm); font-weight:600; color:var(--text-primary); margin-bottom:0.35rem;">
+        Delivery times (minutes) — 4 out of 10 missing
+      </div>
+      <div style="font-size:var(--t-xs); color:var(--text-muted); margin-bottom:1rem;">
+        Red cells = NaN. Pick a strategy to see how each one handles the gaps.
+      </div>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+        <button class="btn btn--sm mv-btn mv-btn--active" data-strategy="none">Show Raw</button>
+        <button class="btn btn--sm mv-btn" data-strategy="mean">Fill Mean</button>
+        <button class="btn btn--sm mv-btn" data-strategy="median">Fill Median</button>
+        <button class="btn btn--sm mv-btn" data-strategy="drop">Drop Rows</button>
+      </div>
+      <div id="mv-canvas"></div>
+    </div>
+
+    <div class="highlight-card" style="margin-top:1.5rem;">
+      <p style="margin:0;">
+        <strong>When to use each strategy:</strong><br>
+        <span style="color:var(--text-muted); font-size:var(--t-xs);">
+          <strong style="color:var(--text-primary);">Mean</strong> — roughly normal distribution, no extreme outliers.
+          &nbsp;·&nbsp;
+          <strong style="color:var(--text-primary);">Median</strong> — skewed data, outliers present (robust to them).
+          &nbsp;·&nbsp;
+          <strong style="color:var(--text-primary);">Mode</strong> — categorical columns (most frequent category).
+          &nbsp;·&nbsp;
+          <strong style="color:var(--text-primary);">Drop</strong> — only if &lt;5% rows missing AND pattern is MCAR.
+          &nbsp;·&nbsp;
+          <strong style="color:var(--text-primary);">Model-based</strong> (KNN imputer, iterative) — best accuracy, highest cost.
+        </span>
+      </p>
+    </div>
+
+    <!-- 2.2 — Feature Scaling ─────────────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:3rem;">Feature Scaling — The Hidden Bias</div>
+    <h2 class="section-title">Age (25) vs Salary (₹6,00,000). The model only sees salary.</h2>
+    <div class="section-body">
+      <p>k-NN, SVM, PCA, logistic regression, and gradient descent are all sensitive to feature scale.
+        Without scaling, a feature with large values completely dominates distance calculations and
+        gradient updates. <strong>Scaling does not change the information in the data — it changes
+        the importance each feature gets during learning.</strong></p>
+    </div>
+
+    <div class="demo-box" style="margin-top:1.5rem;">
+      <div style="font-size:var(--t-sm); font-weight:600; color:var(--text-primary); margin-bottom:0.35rem;">
+        Three features from a placement dataset — one sample student
+      </div>
+      <div style="font-size:var(--t-xs); color:var(--text-muted); margin-bottom:1rem;">
+        In raw mode, salary bars fill the chart. Age and study hours are invisible stubs.
+        After scaling, all three features are comparable. That IS why scaling works.
+      </div>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+        <button class="btn btn--sm fs-btn fs-btn--active" data-mode="raw">Raw Data</button>
+        <button class="btn btn--sm fs-btn" data-mode="standard">StandardScaler</button>
+        <button class="btn btn--sm fs-btn" data-mode="minmax">MinMaxScaler</button>
+      </div>
+      <div id="fs-canvas" style="background:var(--bg-void); border-radius:var(--radius-sm); border:1px solid var(--border);"></div>
+      <div style="margin-top:0.5rem; font-size:var(--t-xs); color:var(--text-muted);">
+        <span style="color:#818cf8;">■</span> Age (25 yrs) &nbsp;·&nbsp;
+        <span style="color:#22d3ee;">■</span> Study_Hours (8 hrs) &nbsp;·&nbsp;
+        <span style="color:#f59e0b;">■</span> Salary (₹6L/yr)
+      </div>
+    </div>
+
+    <!-- 2.3 — Categorical Encoding ──────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:3rem;">Categorical Encoding</div>
+    <h2 class="section-title">Label Encoding lies to linear models. One-Hot tells the truth.</h2>
+    <div class="section-body">
+      <p>ML algorithms require numbers. Categorical columns like "City" must be converted.
+        <strong>Label Encoding</strong> (Delhi=0, Mumbai=1, Bangalore=2) introduces a false ordering —
+        your model thinks Bangalore is "twice" Mumbai. This confuses linear models and neural networks.
+        <strong>One-Hot Encoding</strong> creates one binary column per category — no false math,
+        no false ordering. Each city is its own independent feature.</p>
+    </div>
+
+    <div style="margin-top:1.5rem;">
+      <div class="enc-tab-row">
+        <button class="enc-tab enc-tab--active" data-enc="label">Label Encoding</button>
+        <button class="enc-tab" data-enc="ohe">One-Hot Encoding</button>
+      </div>
+      <div class="enc-table-wrap">
+
+        <div id="enc-label-view">
+          <table class="enc-table">
+            <thead><tr>
+              <th class="enc-th">City</th>
+              <th class="enc-th">city_encoded</th>
+              <th class="enc-th" style="color:#ef4444;">⚠ Problem</th>
+            </tr></thead>
+            <tbody>
+              <tr><td class="enc-td">Delhi</td><td class="enc-td enc-td--label">0</td><td class="enc-td" style="font-size:11px;color:var(--text-muted);">Model sees: Delhi &lt; Mumbai &lt; Bangalore</td></tr>
+              <tr><td class="enc-td">Mumbai</td><td class="enc-td enc-td--label">1</td><td class="enc-td" style="font-size:11px;color:var(--text-muted);">False ordering — Mumbai is not "less than" Bangalore</td></tr>
+              <tr><td class="enc-td">Bangalore</td><td class="enc-td enc-td--label">2</td><td class="enc-td" style="font-size:11px;color:var(--text-muted);">Bangalore = 2× Mumbai in the model's math</td></tr>
+              <tr><td class="enc-td">Delhi</td><td class="enc-td enc-td--label">0</td><td class="enc-td" style="font-size:11px;color:var(--text-muted);">OK for tree models — bad for linear/NN</td></tr>
+              <tr><td class="enc-td">Bangalore</td><td class="enc-td enc-td--label">2</td><td class="enc-td" style="font-size:11px;color:var(--text-muted);">Never use for nominal data in linear models</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="enc-ohe-view" style="display:none;">
+          <table class="enc-table">
+            <thead><tr>
+              <th class="enc-th">City</th>
+              <th class="enc-th">city_Delhi</th>
+              <th class="enc-th">city_Mumbai</th>
+              <th class="enc-th">city_Bangalore</th>
+              <th class="enc-th" style="color:#22c55e;">✓ Result</th>
+            </tr></thead>
+            <tbody>
+              <tr><td class="enc-td">Delhi</td><td class="enc-td enc-td--one">1</td><td class="enc-td enc-td--zero">0</td><td class="enc-td enc-td--zero">0</td><td class="enc-td" style="font-size:11px;color:var(--text-muted);">Cities are independent — no math relationship</td></tr>
+              <tr><td class="enc-td">Mumbai</td><td class="enc-td enc-td--zero">0</td><td class="enc-td enc-td--one">1</td><td class="enc-td enc-td--zero">0</td><td class="enc-td" style="font-size:11px;color:var(--text-muted);">Each city gets its own binary column</td></tr>
+              <tr><td class="enc-td">Bangalore</td><td class="enc-td enc-td--zero">0</td><td class="enc-td enc-td--zero">0</td><td class="enc-td enc-td--one">1</td><td class="enc-td" style="font-size:11px;color:var(--text-muted);">Drop one column (dummy variable trap)</td></tr>
+              <tr><td class="enc-td">Delhi</td><td class="enc-td enc-td--one">1</td><td class="enc-td enc-td--zero">0</td><td class="enc-td enc-td--zero">0</td><td class="enc-td" style="font-size:11px;color:var(--text-muted);">Linear models and NNs can now learn correctly</td></tr>
+              <tr><td class="enc-td">Bangalore</td><td class="enc-td enc-td--zero">0</td><td class="enc-td enc-td--zero">0</td><td class="enc-td enc-td--one">1</td><td class="enc-td" style="font-size:11px;color:var(--text-muted);">8 cities = 7 binary columns (drop first)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 2.4 — Code: 3 Levels ────────────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:3rem;">Write It — 3 Levels of the Same Pipeline</div>
+    <h2 class="section-title">Same transformations. Three levels of production readiness.</h2>
+    <div class="section-body">
+      <p>All three versions clean the same dataset. The sklearn Pipeline version is how production code is written —
+        transformations are chained, applied consistently to train and test, and can be saved with joblib.</p>
+    </div>
+
+    <div style="margin-top:1.5rem;">
+      <div class="code-tabs">
+        <button class="code-tab code-tab--active" data-tab="pandas">Level 1 — Pandas</button>
+        <button class="code-tab" data-tab="sklearn">Level 2 — sklearn</button>
+        <button class="code-tab" data-tab="pipeline">Level 3 — Full Pipeline</button>
+      </div>
+
+      <div class="code-panel code-panel--active" id="tab-pandas">
+        <div class="code-block" style="margin-top:0; border-top-left-radius:0;">
+          <div class="code-block__lang">Python · Pandas · step by step, explicit, educational</div>
+<pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+df = pd.<span class="fn">read_csv</span>(<span class="st">'restaurants.csv'</span>)
+
+<span class="cm"># 1. Standardise city names (inconsistent encoding)</span>
+df[<span class="st">'city'</span>] = df[<span class="st">'city'</span>].<span class="fn">str.lower</span>().<span class="fn">str.strip</span>()
+
+<span class="cm"># 2. Remove outliers in delivery_time using IQR</span>
+Q1 = df[<span class="st">'delivery_min'</span>].<span class="fn">quantile</span>(<span class="nm">0.25</span>)
+Q3 = df[<span class="st">'delivery_min'</span>].<span class="fn">quantile</span>(<span class="nm">0.75</span>)
+IQR = Q3 - Q1
+df = df[df[<span class="st">'delivery_min'</span>] &lt;= Q3 + <span class="nm">1.5</span> * IQR]
+
+<span class="cm"># 3. Fill missing ratings with median (skewed data)</span>
+df[<span class="st">'rating'</span>] = df[<span class="st">'rating'</span>].<span class="fn">fillna</span>(df[<span class="st">'rating'</span>].<span class="fn">median</span>())
+
+<span class="cm"># 4. One-hot encode city</span>
+df = pd.<span class="fn">get_dummies</span>(df, columns=[<span class="st">'city'</span>], drop_first=<span class="kw">True</span>)
+
+<span class="cm"># 5. Scale numeric features</span>
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+scaler = <span class="fn">StandardScaler</span>()
+df[[<span class="st">'rating'</span>, <span class="st">'delivery_min'</span>]] = scaler.<span class="fn">fit_transform</span>(df[[<span class="st">'rating'</span>, <span class="st">'delivery_min'</span>]])
+<span class="kw">print</span>(df.<span class="fn">head</span>())</pre>
+        </div>
+      </div>
+
+      <div class="code-panel" id="tab-sklearn">
+        <div class="code-block" style="margin-top:0; border-top-left-radius:0;">
+          <div class="code-block__lang">Python · sklearn transformers · correct train/test separation</div>
+<pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler, OneHotEncoder
+<span class="kw">from</span> sklearn.impute <span class="kw">import</span> SimpleImputer
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+X = df.<span class="fn">drop</span>(<span class="st">'target'</span>, axis=<span class="nm">1</span>)
+y = df[<span class="st">'target'</span>]
+
+<span class="cm"># Split FIRST — never fit on test data</span>
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
+    X, y, test_size=<span class="nm">0.2</span>, random_state=<span class="nm">42</span>
+)
+
+<span class="cm"># Impute missing values — fit on train only</span>
+imp = <span class="fn">SimpleImputer</span>(strategy=<span class="st">'median'</span>)
+X_train_imp = imp.<span class="fn">fit_transform</span>(X_train[[<span class="st">'rating'</span>, <span class="st">'delivery_min'</span>]])
+X_test_imp  = imp.<span class="fn">transform</span>(X_test[[<span class="st">'rating'</span>, <span class="st">'delivery_min'</span>]])
+<span class="cm"># ↑ transform() not fit_transform() — prevents data leakage</span>
+
+<span class="cm"># Scale — fit on train only</span>
+sc = <span class="fn">StandardScaler</span>()
+X_train_sc = sc.<span class="fn">fit_transform</span>(X_train_imp)
+X_test_sc  = sc.<span class="fn">transform</span>(X_test_imp)   <span class="cm"># same mean/std as train</span></pre>
+        </div>
+      </div>
+
+      <div class="code-panel" id="tab-pipeline">
+        <div class="code-block" style="margin-top:0; border-top-left-radius:0;">
+          <div class="code-block__lang">Python · sklearn Pipeline · production standard · zero leakage</div>
+<pre><span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
+<span class="kw">from</span> sklearn.compose <span class="kw">import</span> ColumnTransformer
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler, OneHotEncoder
+<span class="kw">from</span> sklearn.impute <span class="kw">import</span> SimpleImputer
+<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
+
+num_features = [<span class="st">'rating'</span>, <span class="st">'delivery_min'</span>, <span class="st">'price'</span>]
+cat_features = [<span class="st">'city'</span>, <span class="st">'category'</span>]
+
+num_pipeline = <span class="fn">Pipeline</span>([
+    (<span class="st">'impute'</span>, <span class="fn">SimpleImputer</span>(strategy=<span class="st">'median'</span>)),
+    (<span class="st">'scale'</span>,  <span class="fn">StandardScaler</span>()),
+])
+
+cat_pipeline = <span class="fn">Pipeline</span>([
+    (<span class="st">'impute'</span>, <span class="fn">SimpleImputer</span>(strategy=<span class="st">'most_frequent'</span>)),
+    (<span class="st">'encode'</span>, <span class="fn">OneHotEncoder</span>(handle_unknown=<span class="st">'ignore'</span>, sparse_output=<span class="kw">False</span>)),
+])
+
+preprocessor = <span class="fn">ColumnTransformer</span>([
+    (<span class="st">'num'</span>, num_pipeline, num_features),
+    (<span class="st">'cat'</span>, cat_pipeline, cat_features),
+])
+
+<span class="cm"># Full model pipeline — can be saved with joblib</span>
+model = <span class="fn">Pipeline</span>([
+    (<span class="st">'prep'</span>,  preprocessor),
+    (<span class="st">'model'</span>, <span class="fn">LogisticRegression</span>()),
+])
+
+model.<span class="fn">fit</span>(X_train, y_train)         <span class="cm"># all transformers fit on train</span>
+<span class="kw">print</span>(model.<span class="fn">score</span>(X_test, y_test))  <span class="cm"># transforms test automatically</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.5 — Real Pipeline ────────────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:3rem;">The Real Pipeline</div>
+    <h2 class="section-title">Preprocessing is 60–80% of the pipeline. Not 0%.</h2>
+    <div class="section-body">
+      <p>The highlighted steps below are where ML engineers actually spend most of their time.
+        The model training step — the part every tutorial focuses on — is the smallest block.</p>
+    </div>
+    <div class="pipeline">
+      <div class="pipe-step pipe-step--hot"><div class="pipe-step__icon">🗄️</div><div class="pipe-step__name">Raw Data</div><div class="pipe-step__note">Logs, CSVs, DB. Missing · Dirty · Inconsistent.</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step pipe-step--hot"><div class="pipe-step__icon">🔍</div><div class="pipe-step__name">EDA</div><div class="pipe-step__note">Distributions, nulls, outliers, correlations</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step pipe-step--hot"><div class="pipe-step__icon">🧹</div><div class="pipe-step__name">Clean</div><div class="pipe-step__note">Fill NaN · remove outliers · fix encoding</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step pipe-step--hot"><div class="pipe-step__icon">⚙️</div><div class="pipe-step__name">Transform</div><div class="pipe-step__note">Scale · encode · engineer features</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="pipe-step__icon">✂️</div><div class="pipe-step__name">Split</div><div class="pipe-step__note">Train/val/test. Never touch test early.</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="pipe-step__icon">🧠</div><div class="pipe-step__name">Train</div><div class="pipe-step__note">Gradient descent minimises loss</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="pipe-step__icon">🚀</div><div class="pipe-step__name">Deploy</div><div class="pipe-step__note">API · monitor · retrain on fresh data</div></div>
+    </div>
+    <div style="font-size:var(--t-xs); color:var(--text-muted); margin-top:0.5rem;">
+      <span style="color:var(--teaching); font-weight:700;">Highlighted steps</span> = preprocessing. Where 60–80% of real ML work happens.
+    </div>
+
+    <!-- 2.6 — At Scale ─────────────────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:3rem;">At Scale — What Preprocessing Looks Like in Production</div>
+    <h2 class="section-title">The same pandas code runs on hundreds of millions of rows.</h2>
+    <div class="scale-grid">
+      <div class="scale-card">
+        <div class="scale-card__company">Flipkart · Product Catalogue · Daily</div>
+        <div class="scale-card__metric">150M+</div>
+        <div class="scale-card__label">product rows preprocessed daily · price normalisation, missing-spec imputation, duplicate removal · <strong>Spark pipelines</strong>, not pandas</div>
+      </div>
+      <div class="scale-card">
+        <div class="scale-card__company">Swiggy · Order Data · Real-time</div>
+        <div class="scale-card__metric">30M+</div>
+        <div class="scale-card__label">orders/day · delivery time outliers removed in streaming · missing ratings filled using restaurant-level medians · <strong>Apache Flink</strong></div>
+      </div>
+      <div class="scale-card">
+        <div class="scale-card__company">PhonePe · Transaction Features · Live</div>
+        <div class="scale-card__metric">&lt;10ms</div>
+        <div class="scale-card__label">end-to-end feature computation time · scaling and encoding happen <strong>at inference time</strong>, not just training · fraud detection cannot wait</div>
+      </div>
+      <div class="scale-card">
+        <div class="scale-card__company">Google · Training Data · GPT-scale</div>
+        <div class="scale-card__metric">13T</div>
+        <div class="scale-card__label">tokens cleaned for GPT-4 training · deduplication, quality filtering, toxic content removal, tokenisation — all preprocessing — cost <strong>$5M+ alone</strong></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     LAYER 3 — FOR PLACEMENTS
+     ══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="topic-section">
+  <div class="container">
+
+    <div class="layer-banner layer-banner--3">
+      Layer 3 — For Placements
+      <span>the honest map · exact answer scripts · what they're actually testing</span>
+    </div>
+
+    <!-- 3.1 — Honest Placement Map ─────────────────────────────────────── -->
+    <div class="section-label">The Honest Placement Map</div>
+    <h2 class="section-title">Who tests preprocessing knowledge. And how deep.</h2>
+    <div class="section-body">
+      <p>Preprocessing questions reveal whether you have touched real data — not just tutorials.
+        Every ML interview at every tier tests this. The depth varies.</p>
+    </div>
+
+    <div class="tier-grid">
+      <div class="tier-card tier-card--service">
+        <div class="tier-card__name">Service / IT Giants</div>
+        <div class="tier-card__companies">TCS · Infosys · Wipro · Cognizant · HCL</div>
+        <div class="tier-card__asks"><span class="tier-no">✗ No preprocessing questions</span></div>
+        <div class="tier-card__detail">Aptitude + basic coding. Data cleaning knowledge is irrelevant for intake. You will not need this topic to get in — but you will need it to do any actual work there.</div>
+        <div class="tier-card__salary">Fresher CTC 2025: ₹3.5 – 7 LPA</div>
+      </div>
+      <div class="tier-card tier-card--mnc">
+        <div class="tier-card__name">MNC Product / R&amp;D Labs</div>
+        <div class="tier-card__companies">Adobe · SAP Labs · Samsung R&amp;D · Oracle · Cisco</div>
+        <div class="tier-card__asks"><span class="tier-yes">✓ Basic preprocessing asked</span></div>
+        <div class="tier-card__detail">"How do you handle missing values?" and "When do you use StandardScaler?" — definition level. They want to know you understand the concept and have used it in a project.</div>
+        <div class="tier-card__salary">Fresher CTC 2025: ₹8 – 22 LPA</div>
+      </div>
+      <div class="tier-card tier-card--product">
+        <div class="tier-card__name">India Product Companies</div>
+        <div class="tier-card__companies">Flipkart · Swiggy · PhonePe · Razorpay · CRED</div>
+        <div class="tier-card__asks"><span class="tier-yes">✓✓ Deep preprocessing + leakage</span></div>
+        <div class="tier-card__detail">Scenario-based questions. "Your Swiggy dataset has 30% missing delivery times — walk me through your full approach." They test your reasoning, not your definitions. Leakage trap questions are common here.</div>
+        <div class="tier-card__salary">Fresher CTC 2025: ₹15 – 40 LPA (ML/DS roles)</div>
+      </div>
+      <div class="tier-card tier-card--bigtech">
+        <div class="tier-card__name">Big Tech India Offices</div>
+        <div class="tier-card__companies">Google · Microsoft IDC · Amazon · Meta · Nvidia</div>
+        <div class="tier-card__asks"><span class="tier-yes">✓✓✓ Full pipeline + system design</span></div>
+        <div class="tier-card__detail">End-to-end: "Design a preprocessing pipeline for a 500M-row clickstream dataset." Discuss streaming vs batch, handling schema drift, feature store design, retraining triggers, and monitoring for data drift in production.</div>
+        <div class="tier-card__salary">Fresher CTC 2025: ₹30 – 90 LPA+ (ML/SWE)</div>
+      </div>
+    </div>
+
+    <div class="honest-note">
+      <strong>Honest reality:</strong>
+      CTC ranges are for IIT/NIT/BITS/top private placements (2024–25 cycle). Tier-2/3 colleges: 30–50% lower.
+      Preprocessing skills are tested in <strong>Data Analyst</strong> and <strong>Data Engineer</strong> roles even more heavily than ML Engineer roles —
+      and those roles are 5–8× more available to freshers. This topic is directly monetisable regardless of which data role you target.
+    </div>
+
+    <!-- Coding Round -->
+    <div class="section-label" style="margin-top:3rem;">Coding Round</div>
+    <h2 class="section-title">3 problems. 15–20 min each. Write before revealing.</h2>
+    <div class="section-body">
+      <p>Preprocessing is the most common coding screen topic for DA and DS roles in India —
+        because messy data is the first thing you touch on any real project.
+        These problems come directly from Flipkart and Swiggy screening rounds.</p>
+    </div>
+
+    <div class="coding-probs">
+
+      <!-- P1: Missing value audit + imputation strategy -->
+      <div class="cp-item">
+        <div class="cp-hdr">
+          <div class="cp-left">
+            <span class="cp-num">P1</span>
+            <div class="cp-titles">
+              <div class="cp-title">Missing Value Audit + Correct Imputation Strategy</div>
+              <div class="cp-meta">15 min · Swiggy DA · Flipkart DS screening · Zomato Data Analyst</div>
+            </div>
+          </div>
+          <div class="cp-right">
+            <span class="cp-diff cp-diff--easy">Easy</span>
+            <span class="cp-arrow">▶</span>
+          </div>
+        </div>
+        <div class="cp-body">
+          <div class="cp-task">
+            <strong>Task:</strong> Write a function <code>missing_audit(df)</code> that:
+            <ul>
+              <li>Returns a DataFrame showing: column, dtype, missing count, missing %, and skewness (for numeric cols)</li>
+              <li>Recommends an imputation strategy per column: "median" (skewed numeric), "mean" (symmetric numeric), "mode" (categorical), or "investigate" (missing &gt; 30%)</li>
+            </ul>
+            Then write a second function <code>impute(df)</code> that applies the correct strategy per column.
+            <div class="cp-constraint">⚠️ Never fill with mean for skewed data. |skew| &gt; 1 → use median. Interviewers test this distinction every time.</div>
+          </div>
+          <button class="cp-reveal-btn" data-sol="cp2-s1">Show Solution</button>
+          <div class="cp-sol" id="cp2-s1">
+            <pre class="code-block"><code>import numpy as np
+import pandas as pd
+
+def missing_audit(df):
+    """Audit missing values and recommend imputation strategy per column."""
+    rows = []
+    for col in df.columns:
+        n_miss = df[col].isnull().sum()
+        pct    = n_miss / len(df) * 100
+        dtype  = str(df[col].dtype)
+        skew   = df[col].skew() if pd.api.types.is_numeric_dtype(df[col]) else None
+
+        if pct > 30:
+            strategy = 'investigate'
+        elif pd.api.types.is_numeric_dtype(df[col]):
+            strategy = 'median' if skew is not None and abs(skew) > 1 else 'mean'
+        else:
+            strategy = 'mode'
+
+        rows.append({'column': col, 'dtype': dtype,
+                     'missing': n_miss, 'missing_%': round(pct, 2),
+                     'skewness': round(skew, 2) if skew is not None else 'N/A',
+                     'strategy': strategy})
+
+    return pd.DataFrame(rows).sort_values('missing_%', ascending=False)
+
+
+def impute(df):
+    """Apply correct imputation per column based on dtype and skewness."""
+    df = df.copy()
+    for col in df.columns:
+        if df[col].isnull().sum() == 0:
+            continue
+        if pd.api.types.is_numeric_dtype(df[col]):
+            skew = df[col].skew()
+            fill = df[col].median() if abs(skew) > 1 else df[col].mean()
+        else:
+            fill = df[col].mode()[0]
+        df[col] = df[col].fillna(fill)
+    return df
+
+
+# ── Swiggy delivery dataset with realistic missing patterns ───────────────
+np.random.seed(42)
+n = 300
+df = pd.DataFrame({
+    'delivery_time':     np.concatenate([np.random.lognormal(3.5, 0.4, 285),
+                                         [np.nan] * 15]),      # 5% missing, right-skewed
+    'restaurant_rating': np.where(np.random.rand(n) < 0.08,
+                                  np.nan, np.random.uniform(2.5, 5.0, n)),
+    'order_value':       np.random.normal(350, 80, n),         # ~symmetric
+    'city':              np.random.choice(['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad'], n),
+})
+# Plant categorical missing separately — np.where mixes float NaN with strings in numpy 2.x
+df.loc[np.random.rand(n) < 0.03, 'city'] = np.nan
+
+print(missing_audit(df).to_string(index=False))
+df_clean = impute(df)
+print(f"\nMissing after impute: {df_clean.isnull().sum().sum()}")</code></pre>
+            <div class="cp-mistake">
+              <strong>⚠️ The distinction that separates candidates:</strong>
+              <code>delivery_time</code> is right-skewed (log-normal) — filling with mean pulls the fill value
+              toward the long right tail, inflating imputed values above where 75% of real deliveries sit.
+              Median is always the honest fill for skewed data.
+              <strong>If you say "fill with mean" without checking skewness, you fail the Swiggy DA screen.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- P2: StandardScaler from scratch -->
+      <div class="cp-item">
+        <div class="cp-hdr">
+          <div class="cp-left">
+            <span class="cp-num">P2</span>
+            <div class="cp-titles">
+              <div class="cp-title">Implement StandardScaler from Scratch</div>
+              <div class="cp-meta">15 min · Amazon · Google · any ML Engineer role that tests fundamentals</div>
+            </div>
+          </div>
+          <div class="cp-right">
+            <span class="cp-diff cp-diff--easy">Easy</span>
+            <span class="cp-arrow">▶</span>
+          </div>
+        </div>
+        <div class="cp-body">
+          <div class="cp-task">
+            <strong>Task:</strong> Implement a <code>StandardScaler</code> class with <code>fit(X)</code>,
+            <code>transform(X)</code>, and <code>fit_transform(X)</code> methods — numpy only.
+            It must store <code>mean_</code> and <code>std_</code> from the training data.
+            Crucially: <code>transform</code> must use training mean/std, not test mean/std.
+            Verify your output matches <code>sklearn.preprocessing.StandardScaler</code>.
+            <div class="cp-constraint">⚠️ Core rule: fit only on training data, transform both train and test with training statistics. Getting this wrong is data leakage.</div>
+          </div>
+          <button class="cp-reveal-btn" data-sol="cp2-s2">Show Solution</button>
+          <div class="cp-sol" id="cp2-s2">
+            <pre class="code-block"><code>import numpy as np
+
+class StandardScaler:
+    """z-score normalisation. fit() on train, transform() on both train and test."""
+
+    def fit(self, X):
+        self.mean_ = X.mean(axis=0)
+        self.std_  = X.std(axis=0)
+        # Prevent division by zero for constant features
+        self.std_  = np.where(self.std_ == 0, 1.0, self.std_)
+        return self
+
+    def transform(self, X):
+        return (X - self.mean_) / self.std_
+
+    def fit_transform(self, X):
+        return self.fit(X).transform(X)
+
+    def inverse_transform(self, X_scaled):
+        return X_scaled * self.std_ + self.mean_
+
+
+# ── Verify against sklearn ────────────────────────────────────────────────
+from sklearn.model_selection import train_test_split
+
+np.random.seed(42)
+# Placement dataset: age (22–30), salary (₹3L–₹40L) — very different scales
+X = np.column_stack([
+    np.random.randint(22, 31, 200).astype(float),
+    np.random.lognormal(14.5, 0.6, 200)              # salary in rupees
+])
+X_train, X_test = train_test_split(X, test_size=0.2, random_state=42)
+
+# Our implementation — fit on train ONLY
+scaler = StandardScaler()
+X_train_sc = scaler.fit_transform(X_train)
+X_test_sc  = scaler.transform(X_test)    # uses training mean_/std_
+
+print(f"Train scaled — mean: {X_train_sc.mean(axis=0).round(6)}")  # ~[0, 0]
+print(f"Train scaled — std:  {X_train_sc.std(axis=0).round(6)}")   # ~[1, 1]
+print(f"Test  scaled — mean: {X_test_sc.mean(axis=0).round(4)}")   # near 0, not exactly 0
+
+# Compare with sklearn
+from sklearn.preprocessing import StandardScaler as SKScaler
+sk = SKScaler()
+sk_tr = sk.fit_transform(X_train)
+sk_te = sk.transform(X_test)
+print(f"\nMax diff (train): {abs(X_train_sc - sk_tr).max():.10f}")  # should be ~0
+print(f"Max diff (test) : {abs(X_test_sc  - sk_te).max():.10f}")   # should be ~0</code></pre>
+            <div class="cp-mistake">
+              <strong>⚠️ The mistake that always appears:</strong> calling <code>fit_transform(X_test)</code>
+              instead of <code>transform(X_test)</code>.
+              This recomputes mean/std from the test set — the model now sees test distribution during training.
+              Test mean ≠ train mean → the scaling is inconsistent → predictions are wrong in production.
+              <strong>Rule: fit() once on training data. transform() everywhere else.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- P3: Full preprocessing pipeline -->
+      <div class="cp-item">
+        <div class="cp-hdr">
+          <div class="cp-left">
+            <span class="cp-num">P3</span>
+            <div class="cp-titles">
+              <div class="cp-title">Full Preprocessing Pipeline — sklearn ColumnTransformer</div>
+              <div class="cp-meta">20 min · Flipkart DS Round 2 · Microsoft India · Razorpay ML</div>
+            </div>
+          </div>
+          <div class="cp-right">
+            <span class="cp-diff cp-diff--hard">Hard</span>
+            <span class="cp-arrow">▶</span>
+          </div>
+        </div>
+        <div class="cp-body">
+          <div class="cp-task">
+            <strong>Context:</strong> You receive a raw Flipkart delivery dataset with numeric columns
+            (<code>distance_km</code>, <code>order_value</code>), categorical columns (<code>city</code>, <code>day_of_week</code>),
+            and missing values. Build a production-ready preprocessing pipeline using sklearn's
+            <code>ColumnTransformer</code> that: imputes + scales numerics, imputes + one-hot encodes categoricals.
+            Wrap everything in a <code>Pipeline</code> with a <code>Ridge</code> regressor.
+            <div class="cp-constraint">⚠️ No manual <code>fillna()</code> calls. No separate scaler.fit() outside the Pipeline. Everything inside the Pipeline prevents leakage automatically.</div>
+          </div>
+          <button class="cp-reveal-btn" data-sol="cp2-s3">Show Solution</button>
+          <div class="cp-sol" id="cp2-s3">
+            <pre class="code-block"><code>import numpy as np
+import pandas as pd
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
+
+# ── Simulated Flipkart delivery dataset ───────────────────────────────────
+np.random.seed(42)
+n = 500
+df = pd.DataFrame({
+    'distance_km':   np.random.uniform(0.5, 25, n),
+    'order_value':   np.random.lognormal(6, 0.7, n),  # right-skewed
+    'city':          np.random.choice(['Bangalore', 'Mumbai', 'Delhi', 'Pune'], n),
+    'day_of_week':   np.random.choice(['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], n),
+})
+# Plant 6% missing values
+for col in ['distance_km', 'order_value', 'city']:
+    idx = np.random.choice(n, int(n * 0.06), replace=False)
+    df.loc[idx, col] = np.nan
+
+df['delivery_time'] = (
+    10 + df['distance_km'] * 2.5
+    + np.log1p(df['order_value']) * 0.8
+    + (df['city'] == 'Mumbai').astype(float) * 5
+    + np.random.normal(0, 3, n)
+)
+
+X = df.drop('delivery_time', axis=1)
+y = df['delivery_time']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# ── Define column groups ──────────────────────────────────────────────────
+num_cols = ['distance_km', 'order_value']
+cat_cols = ['city', 'day_of_week']
+
+# ── Sub-pipelines for each column type ───────────────────────────────────
+num_pipe = Pipeline([
+    ('imputer', SimpleImputer(strategy='median')),    # median for skewed numerics
+    ('scaler',  StandardScaler())
+])
+cat_pipe = Pipeline([
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('ohe',     OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+])
+
+# ── ColumnTransformer: apply correct pipe to each column group ─────────────
+preprocessor = ColumnTransformer([
+    ('num', num_pipe, num_cols),
+    ('cat', cat_pipe, cat_cols)
+])
+
+# ── Full pipeline: preprocess → Ridge ────────────────────────────────────
+full_pipe = Pipeline([
+    ('prep',  preprocessor),
+    ('model', Ridge(alpha=1.0))
+])
+
+full_pipe.fit(X_train, y_train)
+y_pred = full_pipe.predict(X_test)
+print(f"Test R²   : {r2_score(y_test, y_pred):.3f}")
+print(f"n_features: {full_pipe.named_steps['prep'].transform(X_test).shape[1]}")
+# Shows total columns after OHE expansion</code></pre>
+            <div class="cp-mistake">
+              <strong>⚠️ Three things that kill candidates in this problem:</strong>
+              <ul>
+                <li>Using <code>strategy='mean'</code> in SimpleImputer for <code>order_value</code> — it's log-normal (right-skewed), median is correct.</li>
+                <li>Calling <code>preprocessor.fit_transform(X_train)</code> separately before wrapping in Pipeline — breaks leakage protection; the Pipeline handles this correctly.</li>
+                <li>Forgetting <code>handle_unknown='ignore'</code> in OneHotEncoder — test cities not seen in training will crash the pipeline without it.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end .coding-probs -->
+
+    <!-- 3.2 — Interview Questions ─────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:3rem;">The Interview Questions</div>
+    <h2 class="section-title">5 questions. Exact scripts. What they're actually testing.</h2>
+    <div class="section-body">
+      <p>These are preprocessing questions asked at the companies above.
+        Each answer is a 30–45 second script. Click to expand.</p>
+    </div>
+
+    <div class="interview-qs">
+
+      <!-- Q1 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q1</span>
+          <span class="iq-q__text">Your Swiggy dataset has 30% missing delivery times. Walk me through your full approach.</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">India Product · MNC Product · Big Tech</span>
+            <span class="iq-badge iq-badge--tests">Tests: do you understand WHY before HOW?</span>
+          </div>
+          <strong>What they want:</strong> A reasoning process, not just "I fill with mean." They want to see if you think about why data is missing before deciding what to do.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (45 seconds)</span>
+            <div class="iq-script__text">
+              "My first question is WHY the data is missing, because the reason determines the fix. <strong>If it's random — server errors, connectivity drops — I'd fill with the median delivery time, because delivery times are typically right-skewed.</strong> If it's systematic — new restaurants always have no delivery history — I'd use a model-based imputer using restaurant location and category to predict the missing time. <strong>But if missing times correlate with very long deliveries that customers cancelled — the missingness itself is the signal — I'd add a binary 'delivery_time_missing' feature and not impute at all.</strong>
+              I'd check missingness patterns with a heatmap, run Little's MCAR test, and decide from there. I would never blindly fill with mean."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "When would you drop rows instead of imputing?" — Answer: Only if less than 5% of rows are affected AND the missingness is completely random (MCAR). Even then, I check whether dropped rows are biased toward any demographic or time period — random removal of 5% can still introduce systematic bias.
+          </div>
+          <div class="iq-redflag">
+            <strong>⚠️ Answers that fail candidates:</strong>
+            <ul>
+              <li>"Fill with mean" — no reasoning about skewness or missingness type = rejected at senior DS roles.</li>
+              <li>"Drop the rows with missing values" — if asked why, candidates say "to clean the data." That is not a reason.</li>
+              <li>Not knowing the three types of missingness (MCAR / MAR / MNAR) — every DS interview at product companies tests this.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q2</span>
+          <span class="iq-q__text">Why do we normalise features? Give a concrete example where it matters and one where it doesn't.</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">All ML-testing tiers · extremely common</span>
+            <span class="iq-badge iq-badge--tests">Tests: algorithm understanding + exceptions</span>
+          </div>
+          <strong>What they want:</strong> Not just "to make features comparable" — they want you to name specific algorithms affected and one that is NOT affected.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (40 seconds)</span>
+            <div class="iq-script__text">
+              "Normalisation matters for any algorithm that uses distances or gradients. <strong>Concrete example: k-NN on a placement dataset with age (22–30) and salary (₹6L–₹40L). Without scaling, every distance calculation is dominated by salary — a difference of ₹1L salary completely outweighs a 5-year age difference. The model effectively ignores age. After StandardScaler, both contribute equally.</strong>
+              Same for gradient descent — unscaled features make the loss surface an elongated ellipse. Training takes 100× more iterations to converge.
+              <br><br>
+              <strong>Where it doesn't matter:</strong> Decision Trees and Random Forest. They split on thresholds, not distances or gradients — whether salary is 600000 or 0.61 makes no difference to the split logic."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "StandardScaler vs MinMaxScaler — when do you pick each?" — Answer: StandardScaler when your data has outliers or you're using SVM/PCA/linear models — it's robust. MinMaxScaler when you need a strict 0–1 range — image pixels, neural nets with sigmoid/tanh. If a ₹2Cr outlier salary is in the data, MinMaxScaler compresses everything else into a tiny range.
+          </div>
+        </div>
+      </div>
+
+      <!-- Q3 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q3</span>
+          <span class="iq-q__text">Label encoding vs one-hot encoding — when do you use each? Which one lies to the model?</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">MNC Product · India Product · Big Tech</span>
+            <span class="iq-badge iq-badge--tests">Tests: encoding knowledge + model awareness</span>
+          </div>
+          <strong>What they want:</strong> To see if you know WHY label encoding is wrong for some algorithms — not just "use one-hot."
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (40 seconds)</span>
+            <div class="iq-script__text">
+              "Label encoding assigns integers — Delhi=0, Mumbai=1, Bangalore=2 — and this introduces a false ordering. Logistic regression and neural networks will interpret Bangalore as mathematically twice Mumbai. <strong>That is label encoding lying to the model.</strong>
+              <br><br>
+              One-Hot Encoding creates a binary column per city — no false ordering, each city is independent. This is correct for linear models and neural networks.
+              <br><br>
+              <strong>When to use label encoding:</strong> only for ordinal categories where the order is real — T-shirt size (S=0, M=1, L=2, XL=3), or for tree-based models like XGBoost where it doesn't matter because they split on thresholds.
+              <br><br>
+              Trap: one-hot with 100 cities creates 99 new columns and can cause multicollinearity. Solution: use target encoding for high-cardinality categoricals."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "What is the dummy variable trap?" — Answer: If you one-hot encode 3 cities into 3 columns, one column is perfectly predictable from the other two (Delhi=1 means Mumbai=0 AND Bangalore=0). This causes multicollinearity. Solution: always use `drop_first=True` in pandas or `drop='first'` in sklearn OneHotEncoder.
+          </div>
+        </div>
+      </div>
+
+      <!-- Q4 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q4</span>
+          <span class="iq-q__text">What is data leakage? Give a real example that would happen at a fintech company.</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">India Product · Big Tech · critical for DS roles</span>
+            <span class="iq-badge iq-badge--tests">Tests: can you spot the most dangerous bug in ML?</span>
+          </div>
+          <strong>What they want:</strong> A concrete example, not a textbook definition. Leakage is the most common cause of "99% training accuracy, 60% production accuracy."
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (45 seconds)</span>
+            <div class="iq-script__text">
+              "Leakage means using information in training that would not exist at prediction time. The model cheats — it learns a shortcut that disappears in production.
+              <br><br>
+              <strong>Real Razorpay example:</strong> You're building a fraud detector. Your feature set includes 'fraud_case_opened' — a flag set by the fraud investigation team after they suspect a transaction. In training, this feature perfectly predicts fraud — 99.5% accuracy. In production, this flag doesn't exist yet for new transactions (the investigation hasn't happened). The model falls to 60% accuracy on day one.
+              <br><br>
+              <strong>Rule:</strong> every feature in training must be available at the exact moment the model makes a prediction. Features computed on the full dataset before train/test split also leak — always split first, compute features after."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "How do you detect leakage?" — Answer: Three signals: suspiciously high training accuracy (99%+ on a hard problem), a feature with near-perfect correlation to the target, and model performance that collapses immediately after deployment. Fix: strict temporal splits for time-series data, review every feature's timestamp against prediction timestamp, use cross-fold target encoding carefully.
+          </div>
+          <div class="iq-redflag">
+            <strong>⚠️ Answers that fail candidates:</strong>
+            <ul>
+              <li>Giving a textbook definition only — "leakage is when test data leaks into training." Interviewers want a production scenario, not a definition.</li>
+              <li>Not knowing why 99% accuracy should raise a red flag — candidates who celebrate it are marked as dangerous to hire.</li>
+              <li>"Split train/test first" without specifying temporally for time-series — a random 80/20 split on transaction data leaks the future into training.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q5 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q5</span>
+          <span class="iq-q__text">Why do we split data into train and test before preprocessing? What breaks if you don't?</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">All ML-testing tiers · catches most candidates</span>
+            <span class="iq-badge iq-badge--tests">Tests: data leakage awareness · pipeline ordering</span>
+          </div>
+          <strong>What they want:</strong> Most candidates get the split right but don't know WHY it must happen before scaling and imputation. This tests deeper understanding.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (40 seconds)</span>
+            <div class="iq-script__text">
+              "The test set must simulate data the model has never seen. If you scale the entire dataset before splitting, the scaler's mean and standard deviation are computed using test data — the model has seen statistical information from the test set during training. That is leakage.
+              <br><br>
+              <strong>Concrete example:</strong> Dataset has a salary outlier of ₹2Cr. If you StandardScale the full dataset, this outlier shifts the mean. The scaler transforms all features using that mean. When you split afterward, the test set has already been influenced by the training scaler parameters. The test set is no longer truly unseen.
+              <br><br>
+              <strong>Correct order always:</strong> Split first → fit all transformers on train only → transform test using train statistics. sklearn Pipeline enforces this automatically. That is why pipelines exist."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "What about cross-validation? When do you fit the scaler?" — Answer: Inside each fold. sklearn's cross_val_score with a Pipeline does this automatically — the scaler is re-fit on each training fold and applied to the validation fold. If you scale before cross_val_score, you've leaked validation data into all folds.
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end interview-qs -->
+
+    <!-- 3.3 — Placement Quiz ────────────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:3rem;">Placement Quiz</div>
+    <h2 class="section-title">5 questions. 30 seconds each. No help.</h2>
+    <div class="section-body">
+      <p>These are the exact style of questions asked at MNC product and India product company interviews.
+        Score 4/5 or above before moving on.</p>
+    </div>
+
+    <div class="quiz-wrap">
+
+      <div class="quiz-start" id="quiz-start-screen">
+        <div style="font-size:3rem; margin-bottom:1rem;">📋</div>
+        <div style="font-size:1.15rem; font-weight:600; margin-bottom:0.5rem;">Ready to test yourself?</div>
+        <p>5 placement-level questions. 30 seconds per question. Explanation after every answer.</p>
+        <button class="btn btn--primary btn--lg" id="quiz-start-btn">Start Quiz →</button>
+      </div>
+
+      <div class="quiz-body" id="quiz-question-screen">
+        <div class="quiz-meta">
+          <span class="quiz-meta__progress" id="quiz-num">1 / 5</span>
+          <span class="quiz-meta__timer" id="quiz-timer-text">30s</span>
+        </div>
+        <div class="progress-bar" style="margin-bottom:1.25rem;">
+          <div class="progress-bar__fill" id="quiz-timer-bar"></div>
+        </div>
+        <div class="quiz-question" id="quiz-q-text"></div>
+        <div class="quiz-options" id="quiz-options"></div>
+        <div class="quiz-explanation" id="quiz-explanation"></div>
+        <button class="btn btn--primary" id="quiz-next-btn" style="margin-top:1.25rem; display:none;">
+          Next Question →
+        </button>
+      </div>
+
+      <div class="quiz-result" id="quiz-result-screen">
+        <div class="quiz-score-big" id="result-score">0 / 5</div>
+        <div style="font-size:2rem; font-weight:700; color:var(--teaching); margin:0.5rem 0;" id="result-pct">0%</div>
+        <div style="color:var(--text-muted); font-size:var(--t-sm); margin-bottom:2rem;" id="result-msg"></div>
+        <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+          <button class="btn btn--ghost" id="quiz-retry-btn">Retry Quiz</button>
+          <a href="/ml" class="btn btn--primary">Back to ML Track →</a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Next Topic Strip ───────────────────────────────────────────────────── -->
+<div class="next-strip">
+  <div class="container">
+    <div class="next-strip__inner">
+      <div>
+        <div class="next-strip__label">You completed Topic 02. Up next:</div>
+        <div class="next-strip__name">Topic 03 — Exploratory Data Analysis</div>
+        <div style="font-size:var(--t-xs); color:var(--text-muted); margin-top:0.25rem;">
+          Distributions · Correlations · Visualisation · Finding patterns before modelling
+        </div>
+      </div>
+      <a href="#" class="btn btn--ghost" style="opacity:0.4; cursor:not-allowed;" aria-disabled="true">Coming Soon</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>var QUIZ_DATA = {{ quiz | tojson }};</script>
+<script src="{{ url_for('static', filename='js/ml/topic2.js') }}"></script>
+<script>
+  Abyss.Chat.init('ml-data-preprocessing');
+
+  /* Reading progress bar */
+  window.addEventListener('scroll', function () {
+    var docH = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var pct  = docH > 0 ? (window.scrollY / docH) * 100 : 0;
+    var fill = document.getElementById('read-progress');
+    if (fill) fill.style.width = Math.min(pct, 100) + '%';
+  });
+
+  /* Encoding tabs */
+  document.querySelectorAll('.enc-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var enc = tab.dataset.enc;
+      document.querySelectorAll('.enc-tab').forEach(function (t) { t.classList.toggle('enc-tab--active', t.dataset.enc === enc); });
+      document.getElementById('enc-label-view').style.display = enc === 'label' ? '' : 'none';
+      document.getElementById('enc-ohe-view').style.display   = enc === 'ohe'   ? '' : 'none';
+    });
+  });
+
+  /* Code tabs */
+  document.querySelectorAll('.code-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var tgt = tab.dataset.tab;
+      document.querySelectorAll('.code-tab').forEach(function (t) { t.classList.toggle('code-tab--active', t.dataset.tab === tgt); });
+      document.querySelectorAll('.code-panel').forEach(function (p) { p.classList.toggle('code-panel--active', p.id === 'tab-' + tgt); });
+    });
+  });
+
+  /* Coding practice accordion */
+  document.querySelectorAll('.cp-hdr').forEach(function (hdr) {
+    hdr.addEventListener('click', function () {
+      var item   = hdr.closest('.cp-item');
+      var isOpen = item.classList.contains('cp-open');
+      document.querySelectorAll('.cp-item').forEach(function (i) { i.classList.remove('cp-open'); });
+      if (!isOpen) item.classList.add('cp-open');
+    });
+  });
+  document.querySelectorAll('.cp-reveal-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var sol    = document.getElementById(btn.dataset.sol);
+      if (!sol) return;
+      var hidden = sol.style.display === 'none' || sol.style.display === '';
+      sol.style.display = hidden ? 'block' : 'none';
+      btn.textContent   = hidden ? 'Hide Solution' : 'Show Solution';
+    });
+  });
+
+  /* Interview accordion */
+  document.querySelectorAll('.iq-q').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var item   = btn.closest('.iq-item');
+      var answer = item.querySelector('.iq-answer');
+      var isOpen = item.classList.contains('open');
+      document.querySelectorAll('.iq-item').forEach(function (it) {
+        it.classList.remove('open');
+        it.querySelector('.iq-answer').classList.remove('open');
+      });
+      if (!isOpen) { item.classList.add('open'); answer.classList.add('open'); }
+    });
+  });
+
+</script>
+{% endblock %}

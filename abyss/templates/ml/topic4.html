@@ -1,0 +1,1099 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  /* ── Creature ─────────────────────────────────────────────────────────── */
+  .creature-wrap { position:absolute; bottom:4px; right:8px; z-index:20; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
+  .creature-svg  { width:90px; height:90px; animation:creature-float 3.5s ease-in-out infinite; cursor:pointer; filter:drop-shadow(0 4px 14px rgba(74,222,128,0.35)); pointer-events:auto; }
+  @keyframes creature-float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-9px);} }
+
+  /* ── Demo ─────────────────────────────────────────────────────────────── */
+  .demo-wrap  { position:relative; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:1.5rem 1.5rem 1.5rem 1.5rem; margin-top:1.25rem; }
+  .demo-label { font-size:var(--t-xs); font-weight:700; color:var(--teaching); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:1rem; }
+  .slider-row { display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1rem; }
+  .slider-row label { font-size:var(--t-sm); color:var(--text-secondary); }
+  .slider-row input[type=range] { width:100%; accent-color:var(--teaching); }
+  .reg-stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:0.6rem; margin-top:1rem; }
+  .reg-stat { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; }
+  .reg-stat span { display:block; font-size:10px; color:var(--text-muted); margin-bottom:0.2rem; }
+  .reg-stat strong { font-size:1.05rem; color:var(--text-primary); }
+
+  /* ── Assumptions ─────────────────────────────────────────────────────── */
+  .assump-tabs { display:flex; gap:0; flex-wrap:wrap; margin-bottom:0; }
+  .assump-tab { padding:0.45rem 0.9rem; border:1px solid var(--border-strong); border-bottom:none; background:var(--bg-elevated); color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; transition:all 0.15s; }
+  .assump-tab:first-child { border-radius:var(--radius-sm) 0 0 0; }
+  .assump-tab:last-child  { border-radius:0 var(--radius-sm) 0 0; }
+  .assump-tab--active { background:var(--bg-surface); color:var(--teaching); border-color:var(--teaching-border,var(--border-strong)); }
+  .assump-chart-wrap { border:1px solid var(--border-strong); border-top:none; border-radius:0 0 var(--radius-sm) var(--radius-sm); background:var(--bg-elevated); padding:0.75rem 0.5rem 0.5rem; }
+  .assump-desc-text { font-size:var(--t-xs); color:var(--text-muted); padding:0.55rem 0.8rem; border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius-sm) var(--radius-sm); background:var(--bg-surface); line-height:1.65; }
+
+  /* ── Regularization viz ─────────────────────────────────────────────── */
+  .reg-model-btns { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem; }
+  .reg-model-btn { padding:0.45rem 1rem; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--bg-elevated); color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; transition:all 0.15s; }
+  .reg-btn--active { background:var(--bg-surface); color:var(--primary); border-color:var(--primary-border,var(--border-strong)); }
+
+  /* ── Metric cards ────────────────────────────────────────────────────── */
+  .metric-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:0.75rem; margin-top:1.25rem; }
+  .metric-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:1.1rem 1.2rem; }
+  .metric-card__name { font-size:var(--t-xs); font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.3rem; }
+  .metric-card__formula { font-family:var(--font-code); font-size:var(--t-xs); color:var(--teaching); padding:0.3rem 0.6rem; background:var(--bg-surface); border-radius:4px; margin-bottom:0.5rem; display:inline-block; }
+  .metric-card__body { font-size:var(--t-xs); color:var(--text-muted); line-height:1.65; }
+
+  /* ── Assumption cards ────────────────────────────────────────────────── */
+  .assump-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:0.65rem; margin-top:1.25rem; }
+  .assump-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:0.9rem 1rem; }
+  .assump-card__num { font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.07em; }
+  .assump-card__name { font-size:var(--t-sm); font-weight:700; color:var(--text-primary); margin:0.2rem 0; }
+  .assump-card__check { font-size:var(--t-xs); color:var(--text-muted); font-family:var(--font-code); }
+  .assump-card__violation { font-size:var(--t-xs); color:#f87171; margin-top:0.3rem; }
+
+  /* ── Code tabs ───────────────────────────────────────────────────────── */
+  .code-tabs  { display:flex; gap:0; flex-wrap:wrap; }
+  .code-tab   { padding:0.5rem 1.1rem; border:1px solid var(--border-strong); border-bottom:none; background:var(--bg-elevated); color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; font-family:var(--font-code); transition:all 0.15s; }
+  .code-tab:first-child { border-radius:var(--radius-sm) 0 0 0; }
+  .code-tab--active { background:var(--bg-surface); color:var(--primary); border-color:var(--primary-border); }
+  .code-panel { display:none; }
+  .code-panel--active { display:block; }
+
+  /* ── Tier grid ───────────────────────────────────────────────────────── */
+  .tier-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(195px,1fr)); gap:0.75rem; margin-top:1.25rem; }
+  .tier-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem 1.1rem; }
+  .tier-badge { display:inline-block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; padding:0.18rem 0.55rem; border-radius:4px; margin-bottom:0.5rem; background:rgba(99,102,241,0.12); color:var(--primary); }
+  .tier-title { font-size:var(--t-sm); font-weight:700; color:var(--text-primary); margin-bottom:0.4rem; }
+  .tier-body  { font-size:var(--t-xs); color:var(--text-muted); line-height:1.65; }
+  .tier-ask   { font-size:var(--t-xs); color:var(--teaching); font-weight:600; margin-top:0.4rem; }
+
+  /* ── Interview IQ ────────────────────────────────────────────────────── */
+  .iq-item  { border-bottom:1px solid var(--border); padding:var(--s-5) 0; }
+  .iq-item:last-child { border-bottom:none; }
+  .iq-q     { display:flex; align-items:flex-start; gap:0.75rem; cursor:pointer; user-select:none; }
+  .iq-q__num { flex-shrink:0; font-size:var(--t-xs); font-weight:700; color:var(--text-muted); padding-top:0.15rem; }
+  .iq-q__text { flex:1; font-size:var(--t-sm); font-weight:600; color:var(--text-primary); }
+  .iq-q__arrow { flex-shrink:0; color:var(--text-muted); transition:transform 0.2s; }
+  .iq-item.open .iq-q__arrow { transform:rotate(90deg); }
+  .iq-answer { display:none; font-size:var(--t-sm); color:var(--text-secondary); line-height:1.75; padding-top:0.9rem; padding-left:1.75rem; }
+  .iq-answer.open { display:block; }
+  .iq-badges { display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.65rem; }
+  .iq-badge { font-size:10px; font-weight:700; padding:0.18rem 0.55rem; border-radius:4px; }
+  .iq-badge--tier  { background:rgba(99,102,241,0.12); color:var(--primary); }
+  .iq-badge--tests { background:rgba(74,222,128,0.1); color:#4ade80; }
+  .iq-script { background:var(--bg-surface); border:1px solid var(--border-strong); border-left:3px solid var(--teaching); border-radius:var(--radius-sm); padding:0.75rem 1rem; margin:0.75rem 0; }
+  .iq-script__label { display:block; font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.4rem; }
+  .iq-script__text  { font-size:var(--t-sm); color:var(--text-secondary); line-height:1.75; font-style:italic; }
+  .iq-script__text strong { color:var(--text-primary); font-style:normal; }
+  .iq-followup { font-size:var(--t-xs); color:var(--text-muted); padding:0.5rem 0.8rem; border:1px solid var(--border); border-radius:var(--radius-sm); }
+  .iq-followup strong { color:var(--warning); }
+  .iq-redflag { font-size:var(--t-xs); color:var(--text-muted); padding:0.55rem 0.85rem; border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-sm); background:rgba(239,68,68,0.04); margin-top:0.55rem; line-height:1.65; }
+  .iq-redflag strong { color:#ef4444; }
+  .iq-redflag ul { margin:0.3rem 0 0 1rem; padding:0; }
+  .iq-redflag li { margin-bottom:0.25rem; }
+  .honest-note { font-size:var(--t-xs); color:var(--text-muted); padding:0.7rem 1rem; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-elevated); line-height:1.65; margin-top:0.75rem; }
+  .honest-note strong { color:var(--warning); }
+
+  /* ── Coding Practice ──────────────────────────────────────────────────── */
+  .coding-probs { margin-top:1.25rem; }
+  .cp-item { border-bottom:1px solid var(--border); }
+  .cp-item:last-child { border-bottom:none; }
+  .cp-hdr { display:flex; justify-content:space-between; align-items:flex-start; padding:1rem 0; cursor:pointer; user-select:none; gap:0.75rem; }
+  .cp-left { display:flex; gap:0.75rem; align-items:flex-start; flex:1; min-width:0; }
+  .cp-num { flex-shrink:0; font-size:var(--t-xs); font-weight:700; color:var(--text-muted); padding-top:0.12rem; min-width:1.8rem; }
+  .cp-titles { flex:1; min-width:0; }
+  .cp-title { font-size:var(--t-sm); font-weight:700; color:var(--text-primary); }
+  .cp-meta { font-size:var(--t-xs); color:var(--text-muted); margin-top:0.2rem; }
+  .cp-right { display:flex; gap:0.55rem; align-items:center; flex-shrink:0; }
+  .cp-diff { font-size:10px; font-weight:700; padding:0.15rem 0.5rem; border-radius:4px; white-space:nowrap; }
+  .cp-diff--medium { background:rgba(251,191,36,0.12); color:#fbbf24; }
+  .cp-diff--hard   { background:rgba(239,68,68,0.12); color:#ef4444; }
+  .cp-arrow { color:var(--text-muted); transition:transform 0.2s; }
+  .cp-item.cp-open .cp-arrow { transform:rotate(90deg); }
+  .cp-body { display:none; padding-bottom:1.25rem; padding-left:2.6rem; }
+  .cp-item.cp-open .cp-body { display:block; }
+  .cp-task { font-size:var(--t-sm); color:var(--text-secondary); line-height:1.75; margin-bottom:0.75rem; }
+  .cp-task strong { color:var(--text-primary); }
+  .cp-task ul { margin:0.4rem 0 0 1.25rem; }
+  .cp-task li { margin-bottom:0.25rem; }
+  .cp-constraint { font-size:var(--t-xs); color:#fb923c; font-weight:600; margin-top:0.55rem; border:1px solid rgba(251,146,60,0.3); border-radius:4px; padding:0.35rem 0.65rem; background:rgba(251,146,60,0.04); }
+  .cp-reveal-btn { padding:0.42rem 1rem; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--bg-elevated); color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; transition:all 0.15s; }
+  .cp-reveal-btn:hover { border-color:var(--primary); color:var(--primary); }
+  .cp-sol { display:none; margin-top:0.75rem; }
+  .cp-mistake { font-size:var(--t-xs); color:var(--text-muted); padding:0.55rem 0.85rem; border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-sm); background:rgba(239,68,68,0.04); margin-top:0.55rem; line-height:1.65; }
+  .cp-mistake strong { color:#ef4444; }
+  .cp-mistake ul { margin:0.3rem 0 0 1rem; padding:0; }
+  .cp-mistake li { margin-bottom:0.2rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="topic-hero">
+  <div class="container">
+    <div class="topic-crumb"><a href="/ml">ML Track</a> › Topic 04</div>
+    <h1 class="topic-title">Linear Regression</h1>
+    <p class="topic-desc">Draw the best straight line through data. Predict any number. Understand every coefficient.</p>
+    <div class="topic-meta">
+      <span class="topic-tag">Regression</span>
+      <span class="topic-tag">OLS</span>
+      <span class="topic-tag">Gradient Descent</span>
+      <span class="topic-tag">Regularisation</span>
+    </div>
+  </div>
+</div>
+
+<div class="topic-body">
+  <div class="container">
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         LAYER 1 — Simple & Easy
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="layer-label">Layer 1 — Simple &amp; Easy</div>
+
+    <div class="section-label">The Straight Line</div>
+    <h2 class="section-title">Predict any number with one equation.</h2>
+    <div class="section-body">
+      <p>Linear regression finds a straight line through data so that the gap between the line and the actual values is as small as possible.
+      Every prediction is: <code>ŷ = w₁x + w₀</code>.
+      The training process adjusts <strong>w₁</strong> (slope) and <strong>w₀</strong> (intercept) until the line fits the data best.</p>
+    </div>
+
+    <!-- Concept cards -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:0.75rem; margin-top:1.25rem;">
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem 1.1rem;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--teaching); margin-bottom:0.4rem;">The Line</div>
+        <code style="font-size:1rem; color:var(--text-primary);">ŷ = w₁x + w₀</code>
+        <div style="font-size:var(--t-xs); color:var(--text-muted); margin-top:0.4rem; line-height:1.6;">w₁ = slope (how much ŷ changes per unit of x). w₀ = intercept (predicted value when x = 0).</div>
+      </div>
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem 1.1rem;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--teaching); margin-bottom:0.4rem;">Cost Function</div>
+        <code style="font-size:0.85rem; color:var(--text-primary);">MSE = Σ(yᵢ − ŷᵢ)² / n</code>
+        <div style="font-size:var(--t-xs); color:var(--text-muted); margin-top:0.4rem; line-height:1.6;">Measures how wrong the line is on average. Training minimises this. Squaring penalises large errors more.</div>
+      </div>
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem 1.1rem;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--teaching); margin-bottom:0.4rem;">Gradient Descent</div>
+        <code style="font-size:0.85rem; color:var(--text-primary);">w := w − α·∂MSE/∂w</code>
+        <div style="font-size:var(--t-xs); color:var(--text-muted); margin-top:0.4rem; line-height:1.6;">Iteratively slides down the error surface by tiny steps (α = learning rate) until the minimum is reached.</div>
+      </div>
+    </div>
+
+    <!-- Interactive Demo -->
+    <div class="section-label" style="margin-top:2.5rem;">Live Demo — Study Score Predictor</div>
+    <h2 class="section-title">Drag the slider. Watch the model update in real time.</h2>
+    <div class="section-body">
+      <p>A model trained on 10 students' study hours and exam scores.
+        Enter study hours → the line draws → the prediction appears with slope, intercept, R², and RMSE computed live.</p>
+    </div>
+
+    <div class="demo-wrap" style="position:relative;">
+      <div class="creature-wrap">
+        <div id="creature4" class="creature-svg"></div>
+      </div>
+
+      <div class="demo-label">Study Hours → Exam Score</div>
+
+      <div class="slider-row">
+        <label>Study hours per day: <strong id="hours-val">5.0</strong> hrs</label>
+        <input type="range" id="hours-slider" min="0.5" max="15" step="0.5" value="5">
+      </div>
+      <button id="reg-predict-btn" class="btn btn--primary">Predict Score</button>
+
+      <div id="reg-chart" style="margin-top:1.25rem; background:var(--bg-surface); border-radius:var(--radius-sm); padding:0.5rem;"></div>
+
+      <div id="reg-result" style="display:none;" class="reg-stat-grid">
+        <div class="reg-stat"><span>Predicted Score</span><strong id="reg-score">—</strong></div>
+        <div class="reg-stat"><span>Slope (w₁)</span><strong id="reg-slope">—</strong></div>
+        <div class="reg-stat"><span>Intercept (w₀)</span><strong id="reg-intercept">—</strong></div>
+        <div class="reg-stat"><span>R²</span><strong id="reg-r2">—</strong></div>
+        <div class="reg-stat"><span>RMSE (training)</span><strong id="reg-rmse">—</strong></div>
+      </div>
+
+      <div style="font-size:var(--t-xs); color:var(--text-muted); margin-top:0.9rem; line-height:1.65; border-top:1px solid var(--border); padding-top:0.75rem;">
+        <strong>What you're seeing:</strong> Blue dots = training data. Orange line = model. Green dot = your prediction.
+        R² close to 1 means the line explains almost all the variation. RMSE is the average error in exam score points.
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         LAYER 2 — Master In Real
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="layer-label" style="margin-top:4rem;">Layer 2 — Master It In Real</div>
+
+    <div class="section-label">India Scale Context</div>
+    <h2 class="section-title">Where linear regression actually runs in production.</h2>
+    <div class="section-body">
+      <p>Every estimate you see in a consumer app is likely a linear model at its core — fast, interpretable, and good enough for billions of predictions per day.</p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(235px,1fr)); gap:0.75rem; margin-top:1.25rem;">
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem 1.2rem;">
+        <div style="font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">Swiggy — Delivery ETA</div>
+        <div style="font-size:var(--t-xs); color:var(--text-muted); line-height:1.65;">
+          Linear regression on distance, restaurant prep time, partner density, time of day → predicted delivery ETA.
+          Runs on every order. 3 million orders/day. Needs to be explainable to ops teams.
+        </div>
+      </div>
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem 1.2rem;">
+        <div style="font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">Freshers' Salary Model</div>
+        <div style="font-size:var(--t-xs); color:var(--text-muted); line-height:1.65;">
+          HR analytics at Infosys / TCS: predict fresher CTC from CGPA, college tier, city, skill certifications.
+          Used for budgeting headcount costs. Coefficients are shown to managers — interpretability required.
+        </div>
+      </div>
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem 1.2rem;">
+        <div style="font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">Rent Pricing — NoBroker</div>
+        <div style="font-size:var(--t-xs); color:var(--text-muted); line-height:1.65;">
+          Predict fair market rent from BHK count, area (sq ft), locality tier, floor, furnishing status.
+          Used to flag underpriced or overpriced listings. Baseline before ensemble models.
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 Assumptions -->
+    <div class="section-label" style="margin-top:2.5rem;">The 5 Assumptions</div>
+    <h2 class="section-title">Linear regression only works when these hold.</h2>
+    <div class="section-body">
+      <p>Violate any one of these and your coefficients become unreliable or your predictions systematically wrong. Every assumption has a test — know both the test and the fix.</p>
+    </div>
+
+    <div class="assump-cards">
+      <div class="assump-card">
+        <div class="assump-card__num">01</div>
+        <div class="assump-card__name">Linearity</div>
+        <div class="assump-card__check">Test: residuals vs fitted — random scatter?</div>
+        <div class="assump-card__violation">Violated: U-shape in residuals → add polynomial features or log-transform</div>
+      </div>
+      <div class="assump-card">
+        <div class="assump-card__num">02</div>
+        <div class="assump-card__name">Independence</div>
+        <div class="assump-card__check">Test: Durbin-Watson statistic ≈ 2</div>
+        <div class="assump-card__violation">Violated: autocorrelation in time-series → add lag features or use ARIMA</div>
+      </div>
+      <div class="assump-card">
+        <div class="assump-card__num">03</div>
+        <div class="assump-card__name">Normality of Residuals</div>
+        <div class="assump-card__check">Test: Q-Q plot, Shapiro-Wilk (small n)</div>
+        <div class="assump-card__violation">Less critical for n &gt; 1000. Fix: log-transform skewed target</div>
+      </div>
+      <div class="assump-card">
+        <div class="assump-card__num">04</div>
+        <div class="assump-card__name">Homoscedasticity</div>
+        <div class="assump-card__check">Test: residuals vs fitted — no funnel?</div>
+        <div class="assump-card__violation">Funnel shape → log/sqrt transform target, or use Weighted Least Squares</div>
+      </div>
+      <div class="assump-card">
+        <div class="assump-card__num">05</div>
+        <div class="assump-card__name">No Multicollinearity</div>
+        <div class="assump-card__check">Test: VIF &lt; 10 for all features</div>
+        <div class="assump-card__violation">VIF &gt; 10 → drop one feature, Ridge regression, or PCA</div>
+      </div>
+    </div>
+
+    <!-- Residual Pattern Gallery -->
+    <div class="section-label" style="margin-top:2.5rem;">Residual Pattern Gallery</div>
+    <h2 class="section-title">A good residual plot is the most important model diagnostic.</h2>
+    <div class="section-body">
+      <p>After fitting a model, plot residuals (actual − predicted) against fitted values. The pattern tells you which assumption is violated — and which fix to apply.</p>
+    </div>
+
+    <div style="margin-top:1.25rem;">
+      <div class="assump-tabs">
+        <button class="assump-tab assump-tab--active" data-key="good">Random (Good)</button>
+        <button class="assump-tab" data-key="nonlin">U-Shape</button>
+        <button class="assump-tab" data-key="hetero">Funnel</button>
+        <button class="assump-tab" data-key="autocor">Trend</button>
+      </div>
+      <div class="assump-chart-wrap">
+        <div id="assump-chart"></div>
+      </div>
+      <div id="assump-desc" class="assump-desc-text">✅ Random scatter around zero — all assumptions satisfied. Linear regression is the right tool.</div>
+    </div>
+
+    <!-- Error Metrics -->
+    <div class="section-label" style="margin-top:2.5rem;">Error Metrics</div>
+    <h2 class="section-title">R², RMSE, MAE — what each one actually tells you.</h2>
+    <div class="section-body">
+      <p>Interviewers always ask "which metric would you use and why?" The answer is never just one metric — and it always depends on the business context.</p>
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-card__name">R² (R-squared)</div>
+        <div class="metric-card__formula">1 − SS_res / SS_tot</div>
+        <div class="metric-card__body">Proportion of variance explained. Range: 0 to 1. <strong>Limitation:</strong> always increases when you add features — use Adjusted R² for model comparison. Does not tell you if predictions are practically accurate.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card__name">RMSE</div>
+        <div class="metric-card__formula">√(Σ(yᵢ − ŷᵢ)² / n)</div>
+        <div class="metric-card__body">Same units as target. <strong>Sensitive to outliers</strong> — squares large errors. Use when large errors are disproportionately bad (e.g., overloading a delivery driver by 3 hours is worse than 3 drivers by 1 hour each).</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card__name">MAE</div>
+        <div class="metric-card__formula">Σ|yᵢ − ŷᵢ| / n</div>
+        <div class="metric-card__body">Same units as target. <strong>Robust to outliers</strong> — treats every rupee of error equally. Use when outliers are genuine (e.g., IIT-tier salaries) and you do not want them dominating the error signal.</div>
+      </div>
+    </div>
+
+    <!-- Regularisation -->
+    <div class="section-label" style="margin-top:2.5rem;">Regularisation — Ridge vs Lasso</div>
+    <h2 class="section-title">When plain OLS overfits, add a penalty to the cost function.</h2>
+    <div class="section-body">
+      <p>Regularisation adds a penalty term that discourages large coefficients. Different penalties have very different effects on which features survive.
+      The chart below shows coefficient magnitudes for a salary prediction model with 5 features — 2 are pure noise.</p>
+    </div>
+
+    <div style="margin-top:1.25rem;">
+      <div class="reg-model-btns">
+        <button class="reg-model-btn reg-btn--active" data-model="ols">OLS (No Penalty)</button>
+        <button class="reg-model-btn" data-model="ridge">Ridge — L2</button>
+        <button class="reg-model-btn" data-model="lasso">Lasso — L1 ✂️</button>
+      </div>
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:0.75rem 0.5rem 0.5rem;">
+        <div id="reg-viz"></div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem; margin-top:0.75rem;">
+        <div style="font-size:var(--t-xs); color:var(--text-muted); padding:0.55rem 0.75rem; border:1px solid var(--border); border-radius:var(--radius-sm);">
+          <strong style="color:#60a5fa;">OLS:</strong> no penalty — all features (including noise) get non-zero coefficients. Overfits when features outnumber real signal.
+        </div>
+        <div style="font-size:var(--t-xs); color:var(--text-muted); padding:0.55rem 0.75rem; border:1px solid var(--border); border-radius:var(--radius-sm);">
+          <strong style="color:#4ade80;">Ridge (L2):</strong> shrinks all coefficients proportionally. Noise features shrink but never reach exactly zero. Good for multicollinearity.
+        </div>
+        <div style="font-size:var(--t-xs); color:var(--text-muted); padding:0.55rem 0.75rem; border:1px solid var(--border); border-radius:var(--radius-sm);">
+          <strong style="color:#fb923c;">Lasso (L1):</strong> drives noise feature coefficients to exactly zero — automatic feature selection. Use when you expect most features to be irrelevant.
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Block -->
+    <div class="section-label" style="margin-top:2.5rem;">Production Code</div>
+    <h2 class="section-title">Three levels — from first model to production pipeline.</h2>
+
+    <div class="code-tabs">
+      <button class="code-tab code-tab--active" data-tab="basic">Basic</button>
+      <button class="code-tab" data-tab="eval">Evaluation</button>
+      <button class="code-tab" data-tab="prod">Production Pipeline</button>
+    </div>
+
+    <div id="tab-basic" class="code-panel code-panel--active">
+      <pre class="code-block"><code>from sklearn.linear_model import LinearRegression
+import numpy as np
+
+X = np.array([1,2,3,4,5,6,7,8,9,10]).reshape(-1,1)  # study hours
+y = np.array([35,45,50,60,65,70,78,82,88,95])        # exam scores
+
+model = LinearRegression()
+model.fit(X, y)
+
+print(f"Slope:     {model.coef_[0]:.2f}")    # score gained per extra hour
+print(f"Intercept: {model.intercept_:.2f}")  # baseline score at 0 hours
+print(f"Predict 7 hours: {model.predict([[7]])[0]:.1f}")</code></pre>
+    </div>
+
+    <div id="tab-eval" class="code-panel">
+      <pre class="code-block"><code>from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+import numpy as np
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+
+r2   = r2_score(y_test, y_pred)
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+mae  = mean_absolute_error(y_test, y_pred)
+
+print(f"R²:   {r2:.3f}")   # fraction of variance explained
+print(f"RMSE: {rmse:.2f}") # avg error, penalises outliers
+print(f"MAE:  {mae:.2f}")  # avg error, treats all equally
+
+# Always check residuals — not just summary metrics
+residuals = y_test - y_pred
+# Plot residuals vs fitted to check assumptions</code></pre>
+    </div>
+
+    <div id="tab-prod" class="code-panel">
+      <pre class="code-block"><code>from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import cross_val_score
+import numpy as np
+
+# Define feature types
+num_features = ['experience_years', 'cgpa', 'distance_km']
+cat_features  = ['city_tier', 'college_type']
+
+# Preprocessing: scale numerics, encode categoricals
+preprocessor = ColumnTransformer([
+    ('num', StandardScaler(), num_features),
+    ('cat', OneHotEncoder(drop='first', sparse_output=False), cat_features)
+])
+
+# Full pipeline: preprocess → Ridge regression
+pipeline = Pipeline([
+    ('prep',  preprocessor),
+    ('model', Ridge(alpha=1.0))   # alpha tunes regularisation strength
+])
+
+# Cross-validated RMSE (5-fold) — never fit on full training data before CV
+scores = cross_val_score(pipeline, X_train, y_train,
+                         scoring='neg_root_mean_squared_error', cv=5)
+print(f"CV RMSE: {-scores.mean():.2f} ± {scores.std():.2f}")
+
+pipeline.fit(X_train, y_train)
+# Coefficients for each feature (after inverse-scaling, for interpretability)
+coef_names = (num_features +
+              pipeline.named_steps['prep']
+              .named_transformers_['cat']
+              .get_feature_names_out(cat_features).tolist())
+for name, coef in zip(coef_names, pipeline.named_steps['model'].coef_):
+    print(f"{name:25s}: {coef:+.4f}")</code></pre>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         LAYER 3 — For Placements
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="layer-label" style="margin-top:4rem;">Layer 3 — For Placements</div>
+
+    <!-- Tier Grid -->
+    <div class="section-label">Placement Tier Map</div>
+    <h2 class="section-title">What interviewers at each tier actually ask about linear regression.</h2>
+    <div class="section-body">
+      <p>Not every company goes this deep. Know which tier you are targeting — and prepare specifically for that depth.</p>
+    </div>
+
+    <div class="tier-grid">
+      <div class="tier-card">
+        <div class="tier-badge">Service Company</div>
+        <div class="tier-title">TCS · Wipro · Infosys</div>
+        <div class="tier-body">Define linear regression. Write the equation. State one real use case.</div>
+        <div class="tier-ask">Ask level: "What is R² and what does it mean?"</div>
+      </div>
+      <div class="tier-card">
+        <div class="tier-badge">India Product</div>
+        <div class="tier-title">Flipkart · Swiggy · Paytm</div>
+        <div class="tier-body">5 assumptions + how to check each. RMSE vs MAE: which and when. Ridge vs Lasso: what is different and why.</div>
+        <div class="tier-ask">Ask level: "Your model has a funnel in the residual plot. What now?"</div>
+      </div>
+      <div class="tier-card">
+        <div class="tier-badge">MNC Product</div>
+        <div class="tier-title">Microsoft · Amazon · Adobe</div>
+        <div class="tier-body">Full diagnostic workflow: fit → residuals → VIF → regularisation decision. Know Adjusted R², cross-validation, production Pipelines.</div>
+        <div class="tier-ask">Ask level: "Walk me through evaluating a salary prediction model end-to-end."</div>
+      </div>
+      <div class="tier-card">
+        <div class="tier-badge">Big Tech / Research</div>
+        <div class="tier-title">Google · Meta · Razorpay DS</div>
+        <div class="tier-body">OLS closed-form solution derivation. Gauss-Markov theorem. Why OLS is BLUE. Feature engineering for non-linear relationships. Heteroscedasticity corrections.</div>
+        <div class="tier-ask">Ask level: "Derive the normal equation. What are its computational limits?"</div>
+      </div>
+    </div>
+
+    <div class="honest-note" style="margin-top:1.25rem;">
+      <strong>⚠️ Honest Warning:</strong> 90% of "ML interviews" at service companies test whether you know the definition.
+      Only India Product tier and above tests whether you can diagnose and fix a broken model.
+      If you are targeting Flipkart, Swiggy, or Razorpay: the Layer 2 content (assumptions, residuals, Ridge vs Lasso) is the actual bar.
+    </div>
+
+    <!-- Coding Round -->
+    <div class="section-label" style="margin-top:3rem;">Coding Round</div>
+    <h2 class="section-title">3 problems. 20–25 min each. Write before revealing.</h2>
+    <div class="section-body">
+      <p>Half of every ML interview at product companies is a coding screen. These match the exact problem style — India context, real constraints.
+        Try each problem before revealing the solution. Speed matters: interviewers time you.</p>
+    </div>
+
+    <div class="coding-probs">
+
+      <!-- P1: Gradient Descent from scratch -->
+      <div class="cp-item">
+        <div class="cp-hdr">
+          <div class="cp-left">
+            <span class="cp-num">P1</span>
+            <div class="cp-titles">
+              <div class="cp-title">Implement Gradient Descent — numpy only</div>
+              <div class="cp-meta">20 min · Amazon Applied Scientist · Flipkart DS screening · Google ML Engineer</div>
+            </div>
+          </div>
+          <div class="cp-right">
+            <span class="cp-diff cp-diff--medium">Medium</span>
+            <span class="cp-arrow">▶</span>
+          </div>
+        </div>
+        <div class="cp-body">
+          <div class="cp-task">
+            <strong>Task:</strong> Implement linear regression with gradient descent — no sklearn, no scipy.
+            Your function must accept <code>X (n_samples, n_features)</code>, <code>y (n_samples,)</code>, learning rate, n_epochs.
+            Initialize weights to zero. Return final <code>w</code> and <code>b</code>.
+            Result must match <code>sklearn.LinearRegression</code> within 2 decimal places on the study-hours dataset.
+            <div class="cp-constraint">⚠️ Constraint: <code>import numpy as np</code> only. No sklearn, scipy, or pandas.</div>
+          </div>
+          <button class="cp-reveal-btn" data-sol="cp4-s1">Show Solution</button>
+          <div class="cp-sol" id="cp4-s1">
+            <pre class="code-block"><code>import numpy as np
+
+def linear_regression_gd(X, y, lr=0.1, epochs=500):
+    """Gradient descent for linear regression. numpy only."""
+    n = len(y)
+    w = np.zeros(X.shape[1])
+    b = 0.0
+
+    for _ in range(epochs):
+        y_hat = X @ w + b       # forward pass
+        error = y_hat - y       # residuals (ŷ − y)
+
+        # MSE gradient: ∂MSE/∂w = (2/n) Xᵀ(ŷ − y)
+        dw = (2 / n) * X.T @ error
+        db = (2 / n) * np.sum(error)
+
+        w -= lr * dw
+        b -= lr * db
+
+    return w, b
+
+
+# ── Study-hours dataset (same as the live demo) ───────────────────────────
+X_raw = np.array([1,2,3,4,5,6,7,8,9,10], dtype=float).reshape(-1, 1)
+y     = np.array([35,45,50,60,65,70,78,82,88,95], dtype=float)
+
+# Normalise — GD needs it; sklearn's closed-form OLS does not
+mu, sigma = X_raw.mean(), X_raw.std()
+X_sc      = (X_raw - mu) / sigma
+
+w, b = linear_regression_gd(X_sc, y)
+
+# Convert normalised coefficients back to original scale
+# ŷ = w*(x−mu)/sigma + b  =  (w/sigma)*x + (b − w*mu/sigma)
+w_orig = w[0] / sigma
+b_orig = b - w[0] * mu / sigma
+print(f"GD  → slope = {w_orig:.2f}   intercept = {b_orig:.2f}")
+
+# Verify against sklearn
+from sklearn.linear_model import LinearRegression
+sk = LinearRegression().fit(X_raw, y)
+print(f"SKL → slope = {sk.coef_[0]:.2f}   intercept = {sk.intercept_:.2f}")
+# Both: slope ≈ 6.39, intercept ≈ 28.03</code></pre>
+            <div class="cp-mistake">
+              <strong>⚠️ Most common mistake:</strong> skipping normalisation and wondering why loss oscillates.
+              Without scaling, the loss surface is a highly elongated ellipse — gradient steps overshoot and may diverge.
+              sklearn's <code>LinearRegression</code> uses the closed-form normal equation <code>(XᵀX)⁻¹Xᵀy</code> — one matrix solve, no learning rate, always exact.
+              <strong>In production: always use the closed-form.</strong> Implement GD only to prove you understand the math.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- P2: Ridge Pipeline + GridSearchCV -->
+      <div class="cp-item">
+        <div class="cp-hdr">
+          <div class="cp-left">
+            <span class="cp-num">P2</span>
+            <div class="cp-titles">
+              <div class="cp-title">Ridge Pipeline with GridSearchCV + Full Diagnostics</div>
+              <div class="cp-meta">25 min · Swiggy DS Round 2 · Microsoft Data Science · Infosys Analytics</div>
+            </div>
+          </div>
+          <div class="cp-right">
+            <span class="cp-diff cp-diff--hard">Hard</span>
+            <span class="cp-arrow">▶</span>
+          </div>
+        </div>
+        <div class="cp-body">
+          <div class="cp-task">
+            <strong>Context:</strong> You join Infosys Analytics. Build a fresher salary prediction model.
+            Use <code>StandardScaler + Ridge</code> inside a sklearn <code>Pipeline</code>.
+            Tune <code>alpha ∈ {0.01, 0.1, 1, 10, 100}</code> with 5-fold <code>GridSearchCV</code> (scoring: <code>neg_root_mean_squared_error</code>).
+            Report: best alpha, CV RMSE, test R², RMSE, MAE, RMSE/MAE ratio, and residual mean + skew.
+            <div class="cp-constraint">⚠️ Failure point: fitting the scaler outside the pipeline leaks test distribution into training. The pipeline must wrap both steps.</div>
+          </div>
+          <button class="cp-reveal-btn" data-sol="cp4-s2">Show Solution</button>
+          <div class="cp-sol" id="cp4-s2">
+            <pre class="code-block"><code>import numpy as np
+import pandas as pd
+from sklearn.linear_model import Ridge
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+
+np.random.seed(42)
+n = 600
+df = pd.DataFrame({
+    'experience_months': np.random.randint(0, 24, n),
+    'cgpa':              np.clip(np.random.normal(7.5, 0.9, n), 4.0, 10.0),
+    'city_tier':         np.random.choice([1, 2, 3], n, p=[0.25, 0.45, 0.30]),
+    'certifications':    np.random.randint(0, 5, n),
+})
+df['salary_lpa'] = (
+    3.2
+    + df['experience_months'] * 0.07
+    + df['cgpa']              * 0.38
+    + (4 - df['city_tier'])   * 0.28
+    + df['certifications']    * 0.12
+    + np.random.normal(0, 0.45, n)
+)
+
+X = df.drop('salary_lpa', axis=1)
+y = df['salary_lpa']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# ── Pipeline: scaler is fitted on train only — no leakage ────────────────
+pipe = Pipeline([('scaler', StandardScaler()), ('ridge', Ridge())])
+gs   = GridSearchCV(pipe,
+                    {'ridge__alpha': [0.01, 0.1, 1, 10, 100]},
+                    cv=5,
+                    scoring='neg_root_mean_squared_error',
+                    n_jobs=-1)
+gs.fit(X_train, y_train)
+
+print(f"Best alpha : {gs.best_params_['ridge__alpha']}")
+print(f"CV RMSE    : {-gs.best_score_:.3f} LPA")
+
+y_pred = gs.best_estimator_.predict(X_test)
+r2   = r2_score(y_test, y_pred)
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+mae  = mean_absolute_error(y_test, y_pred)
+
+print(f"\nTest R²         : {r2:.3f}")
+print(f"Test RMSE       : {rmse:.3f} LPA")
+print(f"Test MAE        : {mae:.3f} LPA")
+print(f"RMSE/MAE ratio  : {rmse/mae:.2f}  (> 1.3 = outliers dominating)")
+
+res = y_test.values - y_pred
+print(f"\nResidual mean   : {res.mean():.4f}  (near 0 = unbiased model)")
+print(f"Residual skew   : {pd.Series(res).skew():.3f}  (near 0 = symmetric errors)")</code></pre>
+            <div class="cp-mistake">
+              <strong>⚠️ Three mistakes that eliminate candidates:</strong>
+              <ul>
+                <li>Fitting <code>StandardScaler</code> before the split — the scaler sees test mean/std, leaking test distribution into training.</li>
+                <li>Calling <code>best_params_['alpha']</code> — inside a Pipeline the key is <code>'ridge__alpha'</code> (step name prefix required).</li>
+                <li>Reporting only R² — interviewers always ask "what is your error in business units?" At Infosys this means LPA. R² alone is not an answer.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- P3: Data Leakage -->
+      <div class="cp-item">
+        <div class="cp-hdr">
+          <div class="cp-left">
+            <span class="cp-num">P3</span>
+            <div class="cp-titles">
+              <div class="cp-title">Find and Fix the Data Leakage</div>
+              <div class="cp-meta">25 min · Razorpay ML Engineer · Flipkart Senior DS · CRED Data Science</div>
+            </div>
+          </div>
+          <div class="cp-right">
+            <span class="cp-diff cp-diff--hard">Hard</span>
+            <span class="cp-arrow">▶</span>
+          </div>
+        </div>
+        <div class="cp-body">
+          <div class="cp-task">
+            <strong>Context:</strong> A Razorpay junior DS shows you a loan EMI prediction model with R²=0.93.
+            "The model is amazing — way better than expected," they say. You are skeptical.
+            Find the leaky feature (hint: use correlation), prove it quantitatively, remove it, rebuild, and compare R² before and after.
+            <div class="cp-constraint">Output must include: leaky feature name, its correlation with target, R² with leakage vs without, and one sentence on how it happened.</div>
+          </div>
+          <button class="cp-reveal-btn" data-sol="cp4-s3">Show Solution</button>
+          <div class="cp-sol" id="cp4-s3">
+            <pre class="code-block"><code>import numpy as np
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
+
+np.random.seed(42)
+n = 800
+# Predictors: credit_score and employment_months drive EMI.
+# city_tier and age are real but weak features — noise in practice.
+# loan_amount intentionally removed: it would dominate and mask the leakage demo.
+df = pd.DataFrame({
+    'credit_score':      np.random.randint(300, 850, n),
+    'employment_months': np.random.randint(0, 120, n),
+    'city_tier':         np.random.choice([1, 2, 3], n),
+    'age':               np.random.randint(22, 55, n),
+})
+# Signal std ≈ 20800 (credit*120 + emp*250), noise std = 12000 → honest R² ≈ 0.75
+df['repayment_emi'] = (
+    df['credit_score']      * 120
+    + df['employment_months'] * 250
+    + np.random.normal(0, 12000, n)
+)
+
+# THE LEAKY FEATURE ─────────────────────────────────────────────────────────
+# 'emi_band' is computed from the target on the full dataset before split.
+# Classic notebook mistake: DS adds a derived column, forgets it encodes the target.
+df['emi_band'] = pd.cut(df['repayment_emi'], bins=5, labels=False)
+
+# ── STEP 1: Prove leakage with correlation ────────────────────────────────
+all_features = ['credit_score', 'employment_months', 'city_tier', 'age', 'emi_band']
+print("Correlation with repayment_emi:")
+for col in all_features:
+    r = df[col].corr(df['repayment_emi'])
+    flag = "  ← ⚠️  LEAKY" if abs(r) > 0.90 else ""
+    print(f"  {col:25s}: {r:+.4f}{flag}")
+
+# ── STEP 2: Model WITH the leaky feature ──────────────────────────────────
+y = df['repayment_emi']
+Xtr, Xte, ytr, yte = train_test_split(df[all_features], y, test_size=0.2, random_state=42)
+r2_leaky = r2_score(yte, LinearRegression().fit(Xtr, ytr).predict(Xte))
+print(f"\nR² with leakage    : {r2_leaky:.4f}  ← suspiciously perfect")
+
+# ── STEP 3: Clean model — leaky feature removed ───────────────────────────
+clean = ['credit_score', 'employment_months', 'city_tier', 'age']
+Xtr2, Xte2, ytr2, yte2 = train_test_split(df[clean], y, test_size=0.2, random_state=42)
+r2_clean = r2_score(yte2, LinearRegression().fit(Xtr2, ytr2).predict(Xte2))
+print(f"R² without leakage : {r2_clean:.4f}  ← honest performance")
+
+# ── Root cause ────────────────────────────────────────────────────────────
+print("""
+Root cause: 'emi_band' was cut from 'repayment_emi' (the target)
+on the full dataset BEFORE the train/test split.
+In production, this feature does not exist for new loan applications —
+the model falls from R²≈0.99 to R²≈0.75 on day one.
+
+Rule: split first, engineer features after, always inside a Pipeline.""")</code></pre>
+            <div class="cp-mistake">
+              <strong>⚠️ Why this kills production models:</strong>
+              Interviewers at Razorpay and Flipkart give this problem because it mirrors a real incident:
+              DS adds an "EMI band" column in a Jupyter notebook before the split cell,
+              model ships at 99% accuracy, crashes to ~75% in production on day one.
+              <strong>Any feature with |correlation| &gt; 0.90 with the target is a leakage suspect.</strong>
+              Check this before every model submission.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end .coding-probs -->
+
+    <!-- Interview IQ -->
+    <div class="section-label" style="margin-top:3rem;">The Interview Questions</div>
+    <h2 class="section-title">5 questions. Exact scripts. What they are actually testing.</h2>
+    <div class="section-body">
+      <p>These questions are asked verbatim at India Product and MNC Product companies. The scripts give you the exact words — memorise the reasoning, not the words.</p>
+    </div>
+
+    <div class="interview-qs">
+
+      <!-- Q1 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q1</span>
+          <span class="iq-q__text">Explain linear regression to a non-technical product manager in 30 seconds.</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">All Tiers · opening question</span>
+            <span class="iq-badge iq-badge--tests">Tests: can you communicate ML without jargon?</span>
+          </div>
+          <strong>What they want:</strong> You to explain slope and prediction clearly, without "gradient descent" or "cost function." PMs and stakeholders need to trust your model — they can't if you talk in equations.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (30 seconds)</span>
+            <div class="iq-script__text">
+              "We draw the best possible straight line through the data.
+              On this chart, x is study hours and y is exam score — and the line says: for every extra hour of studying, a student scores about 6.4 more points.
+              <strong>Once we have that line, we can predict any student's likely score just from their study hours.</strong>
+              The model found that line automatically — it tried thousands of positions and picked the one that was closest to all the actual scores at once."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "How do you know the line is good?" — Answer: R² tells us what fraction of the actual variation in scores the line explains. R²=0.99 means the line accounts for 99% of the differences between students — almost all of it comes down to study hours. Then you check a residual plot to make sure there are no systematic errors hiding behind that number.
+          </div>
+          <div class="iq-redflag">
+            <strong>⚠️ Answers that fail candidates:</strong>
+            <ul>
+              <li>Going straight to "the cost function is MSE and we minimise it with gradient descent" — you have lost the PM in the first sentence.</li>
+              <li>Saying "it finds the line of best fit" with no explanation of what that means — too vague, sounds rehearsed.</li>
+              <li>Not connecting the slope to a business insight ("6.4 more points per hour") — that is the part the PM cares about.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q2</span>
+          <span class="iq-q__text">What are the assumptions of linear regression? Name all five and say how you test each.</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">India Product · MNC Product</span>
+            <span class="iq-badge iq-badge--tests">Tests: do you know the theory, not just the sklearn call?</span>
+          </div>
+          <strong>What they want:</strong> All five named, with the test for each. Most candidates name three then trail off. The ones who get the offer name all five and say "Durbin-Watson" and "VIF."
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (50 seconds)</span>
+            <div class="iq-script__text">
+              "Five assumptions — I remember them as LINE-M.
+              <strong>L — Linearity:</strong> the relationship is linear. I check with a residuals vs fitted plot — if I see a U-shape, the relationship is non-linear and I need to add polynomial features or log-transform.
+              <strong>I — Independence:</strong> residuals are not correlated with each other. The Durbin-Watson statistic — if it is near 2, we are fine. Near 0 or 4 means autocorrelation — common in time-series.
+              <strong>N — Normality of residuals:</strong> less critical for large datasets, but I check with a Q-Q plot.
+              <strong>E — Equal variance (homoscedasticity):</strong> error spread is constant across fitted values. A funnel in the residuals plot means this is violated — fix with log transform.
+              <strong>M — No Multicollinearity:</strong> features are not highly correlated with each other. I compute VIF for each feature — above 10 means I need to drop one or use Ridge."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "What happens if normality of residuals is violated?" — Answer: For large n (n &gt; 1000), the Central Limit Theorem makes OLS estimates approximately normal anyway — the assumption is not critical. It matters most for small datasets where you want valid p-values and confidence intervals. Fix: log-transform the target or use a different model altogether.
+          </div>
+          <div class="iq-redflag">
+            <strong>⚠️ Answers that fail candidates:</strong>
+            <ul>
+              <li>Naming only linearity and normality — that's 2/5. Interviewers immediately know you memorised a short list.</li>
+              <li>Not knowing any tests — saying "I assume the assumptions are met" is a rejection at product companies.</li>
+              <li>"Multicollinearity means features are correlated with the target" — wrong. It means features are correlated with each other.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q3 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q3</span>
+          <span class="iq-q__text">Why do we square the errors in MSE? Why not just average them directly?</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">MNC Product · Big Tech</span>
+            <span class="iq-badge iq-badge--tests">Tests: do you understand the math behind the metric?</span>
+          </div>
+          <strong>What they want:</strong> Two reasons — positive and negative errors cancelling out, and the penalty amplification effect. Both together.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (35 seconds)</span>
+            <div class="iq-script__text">
+              "Two reasons. First: without squaring, positive and negative errors cancel. If I overpredict by ₹2L on one loan and underpredict by ₹2L on another, the average is zero — but the model is wrong on both.
+              <strong>Squaring makes all errors positive.</strong>
+              <br><br>
+              Second reason: squaring amplifies large errors more than small ones.
+              An error of ₹4L contributes ₹16L² — four times the penalty of a ₹2L error which contributes ₹4L².
+              <strong>This pushes the model to avoid large mistakes even at the cost of being slightly wrong on many small ones.</strong>
+              The square root (RMSE) brings the metric back to the original units — rupees, not rupees²."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "When would you use MAE instead?" — Answer: When the business cares equally about all errors and you have genuine outliers that should not dominate training. Salary data with IIT outliers at ₹50L — if you use MSE, those 5 outliers will distort coefficients for all 10,000 freshers. MAE is more robust. But MAE's gradient at zero is discontinuous (the subgradient issue) — MAE is harder to optimise than MSE.
+          </div>
+          <div class="iq-redflag">
+            <strong>⚠️ Answers that fail candidates:</strong>
+            <ul>
+              <li>"We square because that's the standard formula" — not an explanation, marks you as a user not a practitioner.</li>
+              <li>Only giving one reason (cancellation) without mentioning the outlier amplification effect — half marks at best.</li>
+              <li>Not knowing what RMSE is relative to MSE — "we take the square root to get back to interpretable units" is the answer interviewers expect.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q4 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q4</span>
+          <span class="iq-q__text">A Paytm analyst tries linear regression to predict loan default (yes/no). The model outputs 1.4 and −0.3 for some customers. What went wrong?</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">India Product · Big Tech</span>
+            <span class="iq-badge iq-badge--tests">Tests: do you know when NOT to use linear regression?</span>
+          </div>
+          <strong>What they want:</strong> You to name the violation (binary target needs bounded output), explain why linear regression is wrong, and give the correct model.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (35 seconds)</span>
+            <div class="iq-script__text">
+              "Linear regression has no output bounds — it predicts any number from −∞ to +∞.
+              But loan default is binary — 0 or 1 — and we want probabilities that stay between 0 and 1.
+              <strong>A predicted probability of 1.4 is mathematically meaningless.</strong>
+              The correct model is logistic regression, which applies the sigmoid function to the linear output: σ(z) = 1/(1+e⁻ᶻ).
+              <strong>This squashes any real number into (0, 1)</strong>, so every output is a valid probability.
+              The cost function is also different — binary cross-entropy instead of MSE — because optimising MSE on binary labels produces unstable gradients near the boundaries."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "What if I just clip the linear regression predictions to [0, 1]?" — Answer: The clipped model still produces poor decision boundaries. Near the 0 and 1 boundaries, small changes in features cause no change in the clipped output — the model becomes insensitive to the most extreme (and highest-risk) customers. Logistic regression handles the boundaries correctly through the sigmoid's curvature.
+          </div>
+          <div class="iq-redflag">
+            <strong>⚠️ Answers that fail candidates:</strong>
+            <ul>
+              <li>"We should normalise the predictions to [0, 1]" — clipping is not a fix; it destroys the gradient information at the boundaries.</li>
+              <li>Not naming logistic regression specifically — some candidates say "a classification model" without naming it, which sounds vague.</li>
+              <li>Not mentioning the sigmoid function — at product companies, they expect you to know the mathematical reason, not just "use logistic regression."</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q5 -->
+      <div class="iq-item">
+        <div class="iq-q">
+          <span class="iq-q__num">Q5</span>
+          <span class="iq-q__text">Your salary model has R²=0.96 on training data and R²=0.51 on test data. What happened and what is your fix?</span>
+          <span class="iq-q__arrow">▶</span>
+        </div>
+        <div class="iq-answer">
+          <div class="iq-badges">
+            <span class="iq-badge iq-badge--tier">India Product · MNC Product · Big Tech</span>
+            <span class="iq-badge iq-badge--tests">Tests: do you recognise overfitting and know the remedies?</span>
+          </div>
+          <strong>What they want:</strong> Diagnosis (overfitting), root cause (too many features, data leakage, or no regularisation), and at least two concrete fixes.
+          <div class="iq-script">
+            <span class="iq-script__label">Say exactly this (45 seconds)</span>
+            <div class="iq-script__text">
+              "This is classic overfitting — the model memorised the training data instead of learning the underlying pattern.
+              <strong>Train R²=0.96, test R²=0.51 means the model explains 96% of training variance but only 51% of new data variance.</strong>
+              <br><br>
+              Root causes: too many features relative to training samples, features that encode training-specific noise, or data leakage (future information in features).
+              <br><br>
+              <strong>Three fixes:</strong>
+              First — add Ridge or Lasso regularisation to penalise large coefficients and force the model to generalise.
+              Second — reduce features: drop low-VIF features, use Lasso to zero out noise features automatically.
+              Third — get more training data to give the model more signal relative to noise.
+              And recheck for data leakage — sometimes that gap is caused by a feature that encodes the target."
+            </div>
+          </div>
+          <div class="iq-followup">
+            <strong>Follow-up they will ask:</strong> "How do you choose the right alpha for Ridge?" — Answer: GridSearchCV or RandomizedSearchCV with cross-validation. Try alpha in [0.001, 0.01, 0.1, 1, 10, 100]. Pick the alpha that minimises validation RMSE, not training RMSE. Higher alpha = stronger regularisation = smaller coefficients = less overfit.
+          </div>
+          <div class="iq-redflag">
+            <strong>⚠️ Answers that fail candidates:</strong>
+            <ul>
+              <li>"Get more data" as the only fix — valid but incomplete. Regularisation is always the first thing to try because more data is often unavailable.</li>
+              <li>"The test set is different from training set" — this is restating the problem, not diagnosing it. The interviewer already knows that.</li>
+              <li>Not mentioning data leakage — a 0.96 train R² on a hard problem is a red flag that screams leakage, and interviewers expect you to name it.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end interview-qs -->
+
+    <!-- Placement Quiz -->
+    <div class="section-label" style="margin-top:3rem;">Placement Quiz</div>
+    <h2 class="section-title">5 questions. 30 seconds each. No help.</h2>
+    <div class="section-body">
+      <p>Score 4/5 or above before moving to Topic 5. These match the exact style and depth of India Product interviews.</p>
+    </div>
+
+    <div class="quiz-wrap">
+
+      <div class="quiz-start" id="quiz-start-screen" style="text-align:center; padding:2.5rem 1rem;">
+        <div style="font-size:3rem; margin-bottom:1rem;">📈</div>
+        <div style="font-size:1.15rem; font-weight:600; margin-bottom:0.5rem;">Ready to test yourself?</div>
+        <p>5 placement-level linear regression questions. 30 seconds each. Explanation after every answer.</p>
+        <button class="btn btn--primary btn--lg" id="quiz-start-btn">Start Quiz →</button>
+      </div>
+
+      <div class="quiz-body" id="quiz-question-screen">
+        <div class="quiz-meta">
+          <span class="quiz-meta__progress" id="quiz-num">1 / 5</span>
+          <span class="quiz-meta__timer" id="quiz-timer-text">30s</span>
+        </div>
+        <div class="progress-bar" style="margin-bottom:1.25rem;">
+          <div class="progress-bar__fill" id="quiz-timer-bar"></div>
+        </div>
+        <div class="quiz-question" id="quiz-q-text"></div>
+        <div class="quiz-options" id="quiz-options"></div>
+        <div class="quiz-explanation" id="quiz-explanation"></div>
+        <button class="btn btn--primary" id="quiz-next-btn" style="margin-top:1.25rem; display:none;">
+          Next Question →
+        </button>
+      </div>
+
+      <div class="quiz-result" id="quiz-result-screen">
+        <div class="quiz-score-big" id="result-score">0 / 5</div>
+        <div style="font-size:2rem; font-weight:700; color:var(--teaching); margin:0.5rem 0;" id="result-pct">0%</div>
+        <div style="color:var(--text-muted); font-size:var(--t-sm); margin-bottom:2rem;" id="result-msg"></div>
+        <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+          <button class="btn btn--ghost" id="quiz-retry-btn">Retry Quiz</button>
+          <a href="/ml" class="btn btn--primary">Back to ML Track →</a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Next Topic Strip -->
+<div class="next-strip">
+  <div class="container">
+    <div class="next-strip__inner">
+      <div>
+        <div class="next-strip__label">You completed Topic 04. Up next:</div>
+        <div class="next-strip__name">Topic 05 — Logistic Regression</div>
+        <div style="font-size:var(--t-xs); color:var(--text-muted); margin-top:0.25rem;">
+          Sigmoid · Binary Classification · Decision Boundary · Log Loss
+        </div>
+      </div>
+      <a href="#" class="btn btn--ghost" style="opacity:0.4; cursor:not-allowed;" aria-disabled="true">Coming Soon</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>var QUIZ_DATA = {{ quiz | tojson }};</script>
+<script src="{{ url_for('static', filename='js/ml/topic4.js') }}"></script>
+<script>
+  Abyss.Chat.init('linear-regression');
+
+  /* Reading progress bar */
+  window.addEventListener('scroll', function () {
+    var docH = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var pct  = docH > 0 ? (window.scrollY / docH) * 100 : 0;
+    var fill = document.getElementById('read-progress');
+    if (fill) fill.style.width = Math.min(pct, 100) + '%';
+  });
+
+  /* Code tabs */
+  document.querySelectorAll('.code-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var tgt = tab.dataset.tab;
+      document.querySelectorAll('.code-tab').forEach(function (t) { t.classList.toggle('code-tab--active', t.dataset.tab === tgt); });
+      document.querySelectorAll('.code-panel').forEach(function (p) { p.classList.toggle('code-panel--active', p.id === 'tab-' + tgt); });
+    });
+  });
+
+  /* Coding practice accordion */
+  document.querySelectorAll('.cp-hdr').forEach(function (hdr) {
+    hdr.addEventListener('click', function () {
+      var item   = hdr.closest('.cp-item');
+      var isOpen = item.classList.contains('cp-open');
+      document.querySelectorAll('.cp-item').forEach(function (i) { i.classList.remove('cp-open'); });
+      if (!isOpen) item.classList.add('cp-open');
+    });
+  });
+
+  /* Solution reveal */
+  document.querySelectorAll('.cp-reveal-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var sol    = document.getElementById(btn.dataset.sol);
+      if (!sol) return;
+      var hidden = sol.style.display === 'none' || sol.style.display === '';
+      sol.style.display = hidden ? 'block' : 'none';
+      btn.textContent   = hidden ? 'Hide Solution' : 'Show Solution';
+    });
+  });
+
+  /* Interview accordion */
+  document.querySelectorAll('.iq-q').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var item   = btn.closest('.iq-item');
+      var answer = item.querySelector('.iq-answer');
+      var isOpen = item.classList.contains('open');
+      document.querySelectorAll('.iq-item').forEach(function (i) {
+        i.classList.remove('open');
+        i.querySelector('.iq-answer').classList.remove('open');
+      });
+      if (!isOpen) { item.classList.add('open'); answer.classList.add('open'); }
+    });
+  });
+</script>
+{% endblock %}

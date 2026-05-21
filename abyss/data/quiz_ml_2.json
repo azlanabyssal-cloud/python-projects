@@ -1,0 +1,57 @@
+[
+  {
+    "question": "A Swiggy restaurant dataset has 40% missing values in 'avg_delivery_rating'. What is the safest first step?",
+    "options": [
+      "Drop all rows with missing ratings — cleaner data beats imputed data",
+      "Fill with the column mean — always the safest default",
+      "Understand WHY data is missing first — then decide: median if skewed, model-based if a pattern exists, drop only if missingness itself is informative",
+      "Replace missing values with 0 — neutral fill"
+    ],
+    "answer": 2,
+    "explanation": "Missing data has a reason. MCAR (missing completely at random) → impute safely with mean/median. MAR (new restaurants have no ratings yet) → model-based imputation using other columns. MNAR (missing IS the signal — low-rated places remove their rating) → encode 'was_missing' as a binary feature. Never blindly fill or drop without understanding the pattern."
+  },
+  {
+    "question": "Features: age (22–30), study_hours (4–12), salary_LPA (6–40). You train a k-NN classifier without scaling. What happens?",
+    "options": [
+      "Nothing — k-NN is scale-invariant like tree models",
+      "salary_LPA dominates all distance calculations, making age and study_hours irrelevant to the model",
+      "The model trains slower but final accuracy is unaffected",
+      "Scaling only matters for neural networks, not classical ML"
+    ],
+    "answer": 1,
+    "explanation": "k-NN uses Euclidean distance. A salary difference of ₹1 LPA = 100,000 units vs age difference of 1 year = 1 unit. Salary completely drowns the other features — the model effectively only uses salary. After StandardScaler, all features contribute equally. Exception: tree models (Decision Tree, Random Forest) split on thresholds, not distances — they don't need scaling."
+  },
+  {
+    "question": "A city column has 8 unique values: Delhi, Mumbai, Bangalore... You're building logistic regression. Which encoding is correct?",
+    "options": [
+      "Label Encoding (Delhi=0, Mumbai=1, Bangalore=2...) — simpler and works for all models",
+      "One-Hot Encoding — creates a binary column per city, avoids implying a false ordering between cities",
+      "Target Encoding — replace each city with its mean target value",
+      "Drop the column — categorical strings cannot enter logistic regression"
+    ],
+    "answer": 1,
+    "explanation": "Label Encoding on nominal (unordered) categories tells logistic regression that Mumbai (1) is 'half of' Bangalore (2) — a false mathematical relationship. One-Hot Encoding avoids this: each city gets its own binary column. Exception: tree models handle label encoding fine since they split on specific values, not magnitudes. Target Encoding works but risks leaking label info — use with cross-fold encoding."
+  },
+  {
+    "question": "Your Razorpay fraud model: training accuracy 99.4%, test accuracy on new data 59%. Feature set includes 'fraud_case_opened' — a flag set after a fraud is suspected. What is happening?",
+    "options": [
+      "Overfitting — add L2 regularisation to reduce variance",
+      "Underfitting — the model needs more features to learn",
+      "Data leakage — 'fraud_case_opened' is set after fraud is confirmed, so it encodes the answer during training but is always 0 at prediction time",
+      "Class imbalance — use SMOTE to fix the label distribution"
+    ],
+    "answer": 2,
+    "explanation": "Leakage: using information unavailable at prediction time. 'fraud_case_opened' is only set after fraud is detected — so in training it perfectly predicts fraud (hence 99.4%), but in production it's always 0 for new transactions (hence 59%). Rule: every training feature must exist at the exact moment the model makes a prediction. Time-based features computed on the full dataset before splitting also cause leakage."
+  },
+  {
+    "question": "When should you prefer StandardScaler over MinMaxScaler?",
+    "options": [
+      "Always use MinMaxScaler — the 0 to 1 range is universally better",
+      "StandardScaler when features have outliers or you're using SVM, PCA, or linear models. MinMaxScaler when you need bounded output like neural networks with sigmoid/tanh or image pixel data.",
+      "They produce identical results — pick either one",
+      "Neither is needed — only neural networks require feature scaling"
+    ],
+    "answer": 1,
+    "explanation": "StandardScaler (z-score: mean=0, std=1): robust to outliers — a ₹50L salary outlier won't compress all other values into a tiny range. Preferred for SVM, PCA, logistic regression. MinMaxScaler (0–1 range): sensitive to outliers but gives bounded output — preferred for sigmoid/tanh activations in neural networks, and image pixels (already 0–255). Neither is needed for tree-based models (Decision Tree, Random Forest, XGBoost) which split on thresholds."
+  }
+]

@@ -1,0 +1,57 @@
+[
+  {
+    "question": "Which of these is supervised learning?",
+    "options": [
+      "Gmail trained on millions of emails labeled spam or not spam",
+      "Grouping customers by purchase behavior with no prior labels",
+      "A game AI learning by playing against itself",
+      "Compressing images by finding repeated patterns"
+    ],
+    "answer": 0,
+    "explanation": "Supervised = labeled data. Gmail has the correct answer (spam/not spam) for every training email. The model learns from those labels."
+  },
+  {
+    "question": "A model scores 99% accuracy on a dataset where 99% of entries are class A. Is it a good model?",
+    "options": [
+      "Yes — 99% accuracy is excellent",
+      "No — it probably predicts class A for everything and learned nothing",
+      "Depends on the algorithm used",
+      "Yes if trained on enough data"
+    ],
+    "answer": 1,
+    "explanation": "This is the accuracy trap. If 99% of data is class A, predicting class A always gives 99% accuracy — but the model has zero ability to find class B. Always check precision and recall."
+  },
+  {
+    "question": "Why can you not write rules to replace ML for spam filtering?",
+    "options": [
+      "Rules are too slow to run",
+      "Rules cannot be stored in a database",
+      "Spammers change words constantly — rules go stale immediately",
+      "ML is always more accurate than rules"
+    ],
+    "answer": 2,
+    "explanation": "Rules are brittle. A rule that blocks 'free money' stops working when spammers write 'fr3e m0ney'. ML learns from patterns, not words — it adapts automatically."
+  },
+  {
+    "question": "Which type of ML does a chess AI that plays millions of games and improves from wins and losses use?",
+    "options": [
+      "Supervised Learning",
+      "Unsupervised Learning",
+      "Reinforcement Learning",
+      "Transfer Learning"
+    ],
+    "answer": 2,
+    "explanation": "Reinforcement Learning. No labeled dataset. The agent (chess AI) takes actions, gets rewards for winning and penalties for losing, and improves through trial and error. AlphaZero uses this."
+  },
+  {
+    "question": "A retailer segments 10 million customers into groups by behavior — no one told the algorithm how many groups or what they mean. What type of ML is this?",
+    "options": [
+      "Supervised Learning — customer labels exist in CRM",
+      "Reinforcement Learning — reward is higher sales",
+      "Unsupervised Learning — no labels, model finds structure",
+      "Semi-supervised Learning"
+    ],
+    "answer": 2,
+    "explanation": "Unsupervised Learning. No labels. No correct answers given. The model finds hidden groups (clusters) by itself — this is exactly what K-Means clustering does."
+  }
+]

@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+{% block title %}Abyss — From Zero to Placement Ready{% endblock %}
+
+{% block content %}
+
+<!-- ── Hero ─────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero__bg"></div>
+  <div class="hero__content">
+
+    <div class="hero__eyebrow">
+      <span class="badge badge--primary">52 ML Topics &nbsp;·&nbsp; 42 AI Topics &nbsp;·&nbsp; Free Forever</span>
+    </div>
+
+    <h1 class="hero__title">
+      From Zero to<br>
+      <span class="gradient-text">Placement Ready</span>
+    </h1>
+
+    <p class="hero__sub">
+      Interactive ML &amp; AI learning built for 2026–2030 placements.
+      No videos. No passive watching. You interact, you master, you get placed.
+    </p>
+
+    <div class="hero__cta">
+      <a href="/ml" class="btn btn--primary btn--lg">Start ML Track →</a>
+      <a href="#tracks" class="btn btn--ghost btn--lg">See the curriculum</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Stats strip ───────────────────────────────────────────── -->
+<div class="stats-strip">
+  <div class="stat-item">
+    <div class="stat-item__num" data-count="52">0</div>
+    <div class="stat-item__label">ML Topics</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-item__num" data-count="42">0</div>
+    <div class="stat-item__label">AI Topics</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-item__num" data-count="3">0</div>
+    <div class="stat-item__label">ML Models Inside Abyss</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-item__num" data-count="0">0</div>
+    <div class="stat-item__label">Cost to You</div>
+  </div>
+</div>
+
+<!-- ── Three pillars ─────────────────────────────────────────── -->
+<section style="padding: 6rem 0;">
+  <div class="container">
+
+    <div style="text-align:center; margin-bottom: 3rem;">
+      <p class="label label--primary" style="margin-bottom:0.75rem;">The Abyss Method</p>
+      <h2 style="font-size:clamp(1.8rem,4vw,2.5rem); font-weight:700; letter-spacing:-0.5px;">
+        Every topic. Three layers. No exceptions.
+      </h2>
+    </div>
+
+    <div class="pillars">
+      <div class="pillar">
+        <div class="pillar__num">01</div>
+        <div class="pillar__title">Simple &amp; Easy</div>
+        <div class="pillar__body">
+          Every concept lands in 60 seconds through interaction, not theory.
+          The animation teaches. The text supports. Never the other way around.
+        </div>
+      </div>
+      <div class="pillar">
+        <div class="pillar__num">02</div>
+        <div class="pillar__title">Master in Real</div>
+        <div class="pillar__body">
+          Write every algorithm from scratch. See the math react when you change a parameter.
+          Drag data points. Watch the model follow. Feel the code.
+        </div>
+      </div>
+      <div class="pillar">
+        <div class="pillar__num">03</div>
+        <div class="pillar__title">For Placements</div>
+        <div class="pillar__body">
+          Every topic ends with the 3 interview questions that actually get asked —
+          and exactly how to answer them cold.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Tracks ─────────────────────────────────────────────────── -->
+<section id="tracks" style="padding: 5rem 0; border-top: 1px solid var(--border);">
+  <div class="container">
+
+    <div style="margin-bottom:2.5rem;">
+      <p class="label label--primary" style="margin-bottom:0.75rem;">Two Tracks</p>
+      <h2 style="font-size:clamp(1.8rem,4vw,2.5rem); font-weight:700; letter-spacing:-0.5px;">
+        Master ML first. Then conquer AI.
+      </h2>
+      <p style="color:var(--text-muted); margin-top:0.75rem; font-size:0.9rem; max-width:540px; line-height:1.7;">
+        ML is the foundation. Every AI concept builds on it.
+        The order is not a suggestion — it is the architecture.
+      </p>
+    </div>
+
+    <div class="track-grid">
+
+      <!-- ML Track -->
+      <div class="track-card">
+        <div class="track-card__icon">⚙️</div>
+        <div class="track-card__title">Machine Learning</div>
+        <div class="track-card__desc">
+          10 levels. 52 topics. From what ML is, through every algorithm, to deploying
+          a real model. Everything a placement interview can throw at you — covered.
+        </div>
+        <div class="track-card__meta">
+          <span class="badge badge--success">Available Now</span>
+          <span class="badge badge--muted">52 Topics</span>
+          <span class="badge badge--muted">10 Levels</span>
+        </div>
+        <a href="/ml" class="btn btn--primary" style="margin-top:0.5rem; align-self:flex-start;">
+          Start Learning →
+        </a>
+      </div>
+
+      <!-- AI Track -->
+      <div class="track-card track-card--locked">
+        <div class="track-card__icon">🧠</div>
+        <div class="track-card__title">Artificial Intelligence</div>
+        <div class="track-card__desc">
+          8 levels. 42 topics. Classical search, Bayesian networks, NLP, Computer Vision,
+          Reinforcement Learning, LLMs, Prompt Engineering, and AI System Design.
+        </div>
+        <div class="track-card__meta">
+          <span class="badge badge--warning">Coming After ML Track</span>
+          <span class="badge badge--muted">42 Topics</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ML Track levels -->
+    <div style="margin-top:2.5rem; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-lg); padding:2rem;">
+      <p class="label" style="margin-bottom:1.5rem;">ML Track — 10 Levels</p>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:1rem;">
+        {% set levels = [
+          ('00', 'Prerequisites',      'Python, SQL, Stats, LinAlg, Calculus'),
+          ('01', 'Foundation',         'What is ML, Data Prep, EDA, Features'),
+          ('02', 'The Engine',         'Loss Functions, Gradient Descent, Regularization'),
+          ('03', 'Regression',         'Linear, Ridge, Lasso'),
+          ('04', 'Classification',     'Logistic, KNN, Naive Bayes, SVM'),
+          ('05', 'Tree Methods',       'Decision Trees, Random Forest, XGBoost, LightGBM'),
+          ('06', 'Unsupervised',       'K-Means, DBSCAN, PCA, t-SNE, Anomaly Detection'),
+          ('07', 'Evaluation',         'All metrics, Bias-Variance, CV, Imbalanced, Tuning'),
+          ('08', 'Special Topics',     'RecSys, Time Series, A/B Testing, SHAP'),
+          ('09', 'Deep Learning',      'NN, Backprop, CNN, RNN, Transformers, LLMs'),
+          ('10', 'Real World',         'Feature Eng, Pipeline, Deployment, MLOps')
+        ] %}
+        {% for num, title, desc in levels %}
+        <div style="padding:1rem; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm);">
+          <div style="font-family:var(--font-code); font-size:var(--t-xs); color:var(--primary); margin-bottom:0.3rem;">Level {{ num }}</div>
+          <div style="font-size:var(--t-sm); font-weight:600; margin-bottom:0.3rem;">{{ title }}</div>
+          <div style="font-size:var(--t-xs); color:var(--text-muted); line-height:1.5;">{{ desc }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── ML Models inside Abyss ─────────────────────────────────── -->
+<section style="padding:5rem 0; border-top:1px solid var(--border);">
+  <div class="container">
+
+    <div style="margin-bottom:2.5rem;">
+      <p class="label label--teaching" style="margin-bottom:0.75rem;">ML Runs Inside Abyss</p>
+      <h2 style="font-size:clamp(1.8rem,4vw,2.5rem); font-weight:700; letter-spacing:-0.5px;">
+        The platform practices what it teaches.
+      </h2>
+      <p style="color:var(--text-muted); margin-top:0.75rem; font-size:0.9rem; max-width:580px; line-height:1.7;">
+        Three real ML models run inside Abyss — visible, explainable, and powered by
+        the same algorithms taught in the ML track.
+      </p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1.5rem;">
+
+      <div class="model-card">
+        <span class="model-card__algo">Logistic Regression</span>
+        <div class="model-card__title">Placement Readiness Score</div>
+        <div class="model-card__body">
+          Reads your quiz scores, topic completion, accuracy trends and time per topic.
+          Outputs a placement readiness percentage and which company tier you are ready for.
+        </div>
+        <div class="model-card__meta">
+          ✦ Click to see the math behind your own score
+        </div>
+      </div>
+
+      <div class="model-card">
+        <span class="model-card__algo">Decision Tree</span>
+        <div class="model-card__title">Adaptive Quiz Engine</div>
+        <div class="model-card__body">
+          Every quiz adapts in real time to how you are doing.
+          Answer fast and correct — harder question. Struggle — simpler question with a hint.
+          The decision tree is shown to you after every quiz.
+        </div>
+        <div class="model-card__meta">
+          ✦ See every decision it made about you
+        </div>
+      </div>
+
+      <div class="model-card">
+        <span class="model-card__algo">KNN</span>
+        <div class="model-card__title">Study Path Recommender</div>
+        <div class="model-card__body">
+          Finds students with your exact learning pattern and tells you what they studied next —
+          and what placement outcomes they got. Your learning profile is a data point.
+        </div>
+        <div class="model-card__meta">
+          ✦ You are the input. KNN finds your neighbours.
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- ── What makes Abyss different ────────────────────────────── -->
+<section style="padding:5rem 0; border-top:1px solid var(--border);">
+  <div class="container">
+
+    <div style="text-align:center; margin-bottom:3rem;">
+      <p class="label label--primary" style="margin-bottom:0.75rem;">Why Abyss</p>
+      <h2 style="font-size:clamp(1.8rem,4vw,2.5rem); font-weight:700; letter-spacing:-0.5px;">
+        Not a course. A laboratory.
+      </h2>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; max-width:820px; margin:0 auto;">
+      {% set comparisons = [
+        ('Every other platform', 'Abyss'),
+        ('Watch a video', 'Drag data points. Watch the model react.'),
+        ('Read the formula', 'Change the learning rate. See what breaks.'),
+        ('Call sklearn.fit()', 'Write it from scratch. Then use sklearn.'),
+        ('Generic quiz', 'Adaptive quiz — harder when you are ready.'),
+        ('Wall of text', '3 sentences max. Interaction teaches the rest.'),
+        ('No placement focus', 'Top 3 interview questions on every topic.')
+      ] %}
+
+      <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden;">
+        <div style="padding:1rem 1.5rem; background:var(--bg-surface); border-bottom:1px solid var(--border);">
+          <span style="font-size:var(--t-sm); font-weight:600; color:var(--text-muted);">Every Other Platform</span>
+        </div>
+        {% for other, _ in comparisons[1:] %}
+        <div style="padding:0.85rem 1.5rem; border-bottom:1px solid var(--border-subtle); font-size:var(--t-sm); color:var(--text-muted);">
+          {{ other }}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div style="background:var(--bg-elevated); border:1px solid var(--primary-border); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-primary);">
+        <div style="padding:1rem 1.5rem; background:var(--primary-glow); border-bottom:1px solid var(--primary-border);">
+          <span style="font-size:var(--t-sm); font-weight:700; color:var(--primary);">Abyss</span>
+        </div>
+        {% for _, abyss in comparisons[1:] %}
+        <div style="padding:0.85rem 1.5rem; border-bottom:1px solid var(--border-subtle); font-size:var(--t-sm); color:var(--text-primary); font-weight:500;">
+          {{ abyss }}
+        </div>
+        {% endfor %}
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Final CTA ───────────────────────────────────────────────── -->
+<section style="padding:6rem 0; border-top:1px solid var(--border); text-align:center;">
+  <div class="container container--sm">
+    <h2 style="font-size:clamp(2rem,5vw,3rem); font-weight:700; letter-spacing:-1px; margin-bottom:1.25rem;">
+      Start now.<br><span class="gradient-text">Get placed.</span>
+    </h2>
+    <p style="color:var(--text-muted); font-size:1rem; margin-bottom:2.5rem; line-height:1.75;">
+      52 ML topics. 42 AI topics. Three ML models tracking your progress.
+      An AI tutor that knows exactly where you are. All free.
+    </p>
+    <a href="/ml" class="btn btn--primary btn--lg">Start the ML Track →</a>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  Abyss.Chat.init('home');
+</script>
+{% endblock %}

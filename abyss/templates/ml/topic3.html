@@ -95,8 +95,43 @@
   .iq-script__text strong { color:var(--text-primary); font-style:normal; }
   .iq-followup { font-size:var(--t-xs); color:var(--text-muted); padding:0.5rem 0.8rem; border:1px solid var(--border); border-radius:var(--radius-sm); }
   .iq-followup strong { color:var(--warning); }
+  .iq-redflag { font-size:var(--t-xs); color:var(--text-muted); padding:0.55rem 0.85rem; border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-sm); background:rgba(239,68,68,0.04); margin-top:0.55rem; line-height:1.65; }
+  .iq-redflag strong { color:#ef4444; }
+  .iq-redflag ul { margin:0.3rem 0 0 1rem; padding:0; }
+  .iq-redflag li { margin-bottom:0.25rem; }
   .honest-note { font-size:var(--t-xs); color:var(--text-muted); padding:0.7rem 1rem; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-elevated); line-height:1.65; margin-top:0.75rem; }
   .honest-note strong { color:var(--warning); }
+  /* ── Coding Practice ──────────────────────────────────────────────────── */
+  .coding-probs { margin-top:1.25rem; }
+  .cp-item { border-bottom:1px solid var(--border); }
+  .cp-item:last-child { border-bottom:none; }
+  .cp-hdr { display:flex; justify-content:space-between; align-items:flex-start; padding:1rem 0; cursor:pointer; user-select:none; gap:0.75rem; }
+  .cp-left { display:flex; gap:0.75rem; align-items:flex-start; flex:1; min-width:0; }
+  .cp-num { flex-shrink:0; font-size:var(--t-xs); font-weight:700; color:var(--text-muted); padding-top:0.12rem; min-width:1.8rem; }
+  .cp-titles { flex:1; min-width:0; }
+  .cp-title { font-size:var(--t-sm); font-weight:700; color:var(--text-primary); }
+  .cp-meta { font-size:var(--t-xs); color:var(--text-muted); margin-top:0.2rem; }
+  .cp-right { display:flex; gap:0.55rem; align-items:center; flex-shrink:0; }
+  .cp-diff { font-size:10px; font-weight:700; padding:0.15rem 0.5rem; border-radius:4px; white-space:nowrap; }
+  .cp-diff--easy   { background:rgba(74,222,128,0.12); color:#4ade80; }
+  .cp-diff--medium { background:rgba(251,191,36,0.12); color:#fbbf24; }
+  .cp-diff--hard   { background:rgba(239,68,68,0.12); color:#ef4444; }
+  .cp-arrow { color:var(--text-muted); transition:transform 0.2s; }
+  .cp-item.cp-open .cp-arrow { transform:rotate(90deg); }
+  .cp-body { display:none; padding-bottom:1.25rem; padding-left:2.6rem; }
+  .cp-item.cp-open .cp-body { display:block; }
+  .cp-task { font-size:var(--t-sm); color:var(--text-secondary); line-height:1.75; margin-bottom:0.75rem; }
+  .cp-task strong { color:var(--text-primary); }
+  .cp-task ul { margin:0.4rem 0 0 1.25rem; }
+  .cp-task li { margin-bottom:0.25rem; }
+  .cp-constraint { font-size:var(--t-xs); color:#fb923c; font-weight:600; margin-top:0.55rem; border:1px solid rgba(251,146,60,0.3); border-radius:4px; padding:0.35rem 0.65rem; background:rgba(251,146,60,0.04); }
+  .cp-reveal-btn { padding:0.42rem 1rem; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--bg-elevated); color:var(--text-muted); font-size:var(--t-xs); font-weight:600; cursor:pointer; transition:all 0.15s; }
+  .cp-reveal-btn:hover { border-color:var(--primary); color:var(--primary); }
+  .cp-sol { display:none; margin-top:0.75rem; }
+  .cp-mistake { font-size:var(--t-xs); color:var(--text-muted); padding:0.55rem 0.85rem; border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-sm); background:rgba(239,68,68,0.04); margin-top:0.55rem; line-height:1.65; }
+  .cp-mistake strong { color:#ef4444; }
+  .cp-mistake ul { margin:0.3rem 0 0 1rem; padding:0; }
+  .cp-mistake li { margin-bottom:0.2rem; }
 
   /* ── Keyframes ──────────────────────────────────── */
   @keyframes creature-float  { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-9px);} }
@@ -449,6 +484,303 @@ plt.<span class="fn">show</span>()
       and DA roles are 8–10× more available to freshers. Nail EDA and your interview conversion rate for any data role goes up significantly.
     </div>
 
+    <!-- 3.2 — Coding Round ──────────────────────────────────────────────── -->
+    <div class="section-label" style="margin-top:3rem;">Coding Round</div>
+    <h2 class="section-title">3 problems. 15–20 min each. Write before revealing.</h2>
+    <div class="section-body">
+      <p>EDA coding rounds test whether you can write clean, correct pandas and numpy — not just describe what EDA is.
+        These problems are given verbatim at DA and DS screening rounds in India. Write the code first.</p>
+    </div>
+
+    <div class="coding-probs">
+
+      <!-- P1: IQR outlier detection -->
+      <div class="cp-item">
+        <div class="cp-hdr">
+          <div class="cp-left">
+            <span class="cp-num">P1</span>
+            <div class="cp-titles">
+              <div class="cp-title">IQR Outlier Detection — production-ready function</div>
+              <div class="cp-meta">15 min · Flipkart DA · Swiggy DS · Ola Data Analyst screening</div>
+            </div>
+          </div>
+          <div class="cp-right">
+            <span class="cp-diff cp-diff--easy">Easy</span>
+            <span class="cp-arrow">▶</span>
+          </div>
+        </div>
+        <div class="cp-body">
+          <div class="cp-task">
+            <strong>Task:</strong> Write a function <code>iqr_outliers(df, col)</code> that:
+            <ul>
+              <li>Computes Q1, Q3, IQR and the lower and upper fences (1.5×IQR rule)</li>
+              <li>Returns the original DataFrame with two new columns: <code>is_outlier</code> (bool) and <code>outlier_type</code> ("high", "low", or "normal")</li>
+              <li>Prints a summary: Q1, Q3, fences, count and percentage of outliers</li>
+            </ul>
+            Test it on a simulated Swiggy delivery_time column with planted extreme values (9999, 0, 250).
+            <div class="cp-constraint">⚠️ Do not drop outliers — flag them. Interviewers immediately ask why you dropped instead of flagged.</div>
+          </div>
+          <button class="cp-reveal-btn" data-sol="cp3-s1">Show Solution</button>
+          <div class="cp-sol" id="cp3-s1">
+            <pre class="code-block"><code>import numpy as np
+import pandas as pd
+
+def iqr_outliers(df, col):
+    """Flag outliers using the 1.5×IQR rule. Returns augmented DataFrame."""
+    q1  = df[col].quantile(0.25)
+    q3  = df[col].quantile(0.75)
+    iqr = q3 - q1
+
+    lo = q1 - 1.5 * iqr
+    hi = q3 + 1.5 * iqr
+
+    out = df.copy()
+    out['is_outlier']   = ~df[col].between(lo, hi)
+    out['outlier_type'] = 'normal'
+    out.loc[df[col] > hi, 'outlier_type'] = 'high'
+    out.loc[df[col] < lo, 'outlier_type'] = 'low'
+
+    n_out = out['is_outlier'].sum()
+    print(f"Q1={q1:.1f}  Q3={q3:.1f}  IQR={iqr:.1f}")
+    print(f"Fences: [{lo:.1f}, {hi:.1f}]")
+    print(f"Outliers: {n_out} of {len(df)} ({n_out/len(df)*100:.1f}%)")
+    print(out[out['is_outlier']][['delivery_time', 'outlier_type']]
+            .sort_values('delivery_time'))
+    return out
+
+
+# ── Swiggy-style delivery time data ──────────────────────────────────────
+np.random.seed(42)
+times = np.concatenate([
+    np.random.normal(32, 8, 95),   # normal deliveries: ~28-40 min
+    [9999, 0, 250, 180, 300]       # planted: placeholder, cancelled, extreme
+])
+df = pd.DataFrame({'delivery_time': times})
+
+result = iqr_outliers(df, 'delivery_time')
+
+# NEXT STEP: never silently drop
+# Option 1 — cap at fence (winsorize)
+df['delivery_time_capped'] = df['delivery_time'].clip(lower=result['delivery_time'].quantile(0.25) - 1.5*(result['delivery_time'].quantile(0.75)-result['delivery_time'].quantile(0.25)),
+                                                       upper=result['delivery_time'].quantile(0.75) + 1.5*(result['delivery_time'].quantile(0.75)-result['delivery_time'].quantile(0.25)))
+# Option 2 — add binary flag, keep original
+result['was_outlier_flag'] = result['is_outlier'].astype(int)</code></pre>
+            <div class="cp-mistake">
+              <strong>⚠️ Most common mistake:</strong> writing <code>df[df['delivery_time'] &lt; hi]</code> to "remove outliers"
+              before understanding what they are.
+              9999 minutes = placeholder. 0 minutes = cancelled order. 250 minutes = remote location delivery.
+              These are three different problems requiring three different fixes.
+              <strong>Always flag first, understand why, then decide — cap, NaN, binary flag, or keep.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- P2: Full EDA pipeline -->
+      <div class="cp-item">
+        <div class="cp-hdr">
+          <div class="cp-left">
+            <span class="cp-num">P2</span>
+            <div class="cp-titles">
+              <div class="cp-title">Full EDA Report Function — what pandas-profiling does internally</div>
+              <div class="cp-meta">20 min · Meesho DS · Paytm DA Round 2 · Myntra Data Science</div>
+            </div>
+          </div>
+          <div class="cp-right">
+            <span class="cp-diff cp-diff--medium">Medium</span>
+            <span class="cp-arrow">▶</span>
+          </div>
+        </div>
+        <div class="cp-body">
+          <div class="cp-task">
+            <strong>Task:</strong> Write a function <code>eda_report(df, target=None)</code> that prints:
+            <ul>
+              <li>Shape, dtypes breakdown</li>
+              <li>Missing values: column, count, percentage — sorted by percentage descending</li>
+              <li>For each numeric column: mean, median, std, skewness, max — with a ⚠️ flag if |skew| &gt; 1 or if max &gt; 3×IQR upper fence</li>
+              <li>If target is given: Pearson correlation of all numeric features with target, sorted descending</li>
+            </ul>
+            <div class="cp-constraint">⚠️ No ydata-profiling or sweetviz. Pure pandas + numpy. Interviewers want to see you know what's inside the library.</div>
+          </div>
+          <button class="cp-reveal-btn" data-sol="cp3-s2">Show Solution</button>
+          <div class="cp-sol" id="cp3-s2">
+            <pre class="code-block"><code>import numpy as np
+import pandas as pd
+
+def eda_report(df, target=None):
+    """Concise EDA report. Pure pandas/numpy — no external libraries."""
+    sep = '─' * 50
+
+    # ── Shape & dtypes ────────────────────────────────────────────────────
+    print(f"{sep}\nSHAPE: {df.shape[0]:,} rows × {df.shape[1]} columns")
+    print(df.dtypes.value_counts().to_string())
+
+    # ── Missing values ────────────────────────────────────────────────────
+    missing = df.isnull().sum()
+    missing = missing[missing > 0].sort_values(ascending=False)
+    if not missing.empty:
+        print(f"\n{sep}\nMISSING VALUES")
+        miss_pct = (missing / len(df) * 100).round(2)
+        print(pd.DataFrame({'count': missing, 'pct_%': miss_pct}).to_string())
+    else:
+        print(f"\n{sep}\nNo missing values ✓")
+
+    # ── Numeric summary ───────────────────────────────────────────────────
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    print(f"\n{sep}\nNUMERIC SUMMARY ({len(num_cols)} columns)")
+    for col in num_cols:
+        s    = df[col]
+        q1, q3   = s.quantile(0.25), s.quantile(0.75)
+        iqr      = q3 - q1
+        hi_fence = q3 + 1.5 * iqr
+        n_out    = ((s > hi_fence) | (s < q1 - 1.5 * iqr)).sum()
+        skew     = s.skew()
+
+        print(f"\n  {col}")
+        print(f"    mean={s.mean():.2f}  median={s.median():.2f}  "
+              f"std={s.std():.2f}  skew={skew:.2f}  max={s.max():.2f}")
+        print(f"    outliers (IQR rule): {n_out}")
+
+        if abs(skew) > 1:
+            direction = "right" if skew > 0 else "left"
+            print(f"    ⚠️  {direction}-skewed → use median; consider log-transform")
+        if s.max() > hi_fence * 3:
+            print(f"    ⚠️  Extreme max ({s.max():.1f}) → likely data entry error")
+
+    # ── Correlation with target ───────────────────────────────────────────
+    if target and target in df.columns:
+        print(f"\n{sep}\nCORRELATION WITH '{target}'")
+        corrs = (df[num_cols]
+                 .corrwith(df[target])
+                 .drop(target, errors='ignore')
+                 .sort_values(key=abs, ascending=False))
+        print(corrs.round(4).to_string())
+
+
+# ── Test on simulated Meesho product dataset ──────────────────────────────
+np.random.seed(42)
+n = 500
+df_test = pd.DataFrame({
+    'price':         np.random.lognormal(6, 1, n),          # right-skewed ✓
+    'rating':        np.clip(np.random.normal(4.1, 0.6, n), 1, 5),
+    'reviews_count': np.concatenate([np.random.randint(0, 500, 495),
+                                     [9999, 8888, 10000, 7777, 6666]]),  # 495 + 5 = 500
+    'discount_pct':  np.random.randint(0, 80, n),
+    'category':      np.random.choice(['fashion', 'home', 'beauty'], n),
+    'revenue':       None,  # placeholder — fill below
+})
+df_test['revenue'] = df_test['price'] * (1 - df_test['discount_pct']/100) * \
+                     np.log1p(df_test['reviews_count']) + np.random.normal(0, 50, n)
+# Plant 5% missing values in price
+df_test.loc[np.random.choice(n, 25, replace=False), 'price'] = np.nan
+
+eda_report(df_test, target='revenue')</code></pre>
+            <div class="cp-mistake">
+              <strong>⚠️ What separates a pass from a fail:</strong>
+              Most candidates write <code>df.describe()</code> and call it EDA.
+              Interviewers at Meesho and Myntra want to see you <em>interpret</em> the output —
+              flagging skewness, spotting extreme maxes, and connecting correlation to feature usefulness.
+              <code>describe()</code> is step one. Acting on what it tells you is the actual job.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- P3: Multicollinearity + VIF -->
+      <div class="cp-item">
+        <div class="cp-hdr">
+          <div class="cp-left">
+            <span class="cp-num">P3</span>
+            <div class="cp-titles">
+              <div class="cp-title">Correlation Matrix + VIF Multicollinearity Check</div>
+              <div class="cp-meta">20 min · Razorpay DS · Google India ML · Amazon ML Scientist</div>
+            </div>
+          </div>
+          <div class="cp-right">
+            <span class="cp-diff cp-diff--medium">Medium</span>
+            <span class="cp-arrow">▶</span>
+          </div>
+        </div>
+        <div class="cp-body">
+          <div class="cp-task">
+            <strong>Context:</strong> You are building a credit score prediction model at Razorpay.
+            The feature set has <code>income</code>, <code>tax_paid</code> (derived from income), <code>loan_amount</code>, <code>city_tier</code>.
+            Write a function <code>vif_check(df)</code> that computes the Variance Inflation Factor for each feature
+            and flags columns with VIF &gt; 10 as problematic. Then decide: drop, Ridge, or keep?
+            <div class="cp-constraint">⚠️ Requires <code>statsmodels</code>. Install: <code>pip install statsmodels</code>. VIF &gt; 10 = action required. VIF &gt; 5 = investigate.</div>
+          </div>
+          <button class="cp-reveal-btn" data-sol="cp3-s3">Show Solution</button>
+          <div class="cp-sol" id="cp3-s3">
+            <pre class="code-block"><code>import numpy as np
+import pandas as pd
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+def vif_check(df):
+    """
+    Compute VIF for each numeric column.
+    VIF = 1: no correlation with other features.
+    VIF 1–5: acceptable.
+    VIF 5–10: investigate.
+    VIF > 10: action required — inflates coefficient variance in linear models.
+    """
+    X = df.select_dtypes(include=[np.number]).dropna()
+    vif_df = pd.DataFrame({
+        'feature': X.columns,
+        'VIF':     [variance_inflation_factor(X.values, i)
+                    for i in range(X.shape[1])]
+    }).sort_values('VIF', ascending=False)
+
+    vif_df['status'] = vif_df['VIF'].apply(
+        lambda v: '🔴 CRITICAL (> 10)'   if v > 10 else
+                  '🟡 MODERATE (5–10)'   if v > 5  else
+                  '🟢 OK (< 5)'
+    )
+    return vif_df.reset_index(drop=True)
+
+
+# ── Razorpay credit features — tax_paid is derived from income ────────────
+np.random.seed(42)
+n = 500
+income         = np.random.normal(60000, 15000, n)
+tax_paid       = income * 0.30 + np.random.normal(0, 800, n)   # r ≈ 0.97 with income
+loan_amount    = income * 0.45 + np.random.normal(0, 5000, n)  # r ≈ 0.88 with income
+city_tier      = np.random.choice([1, 2, 3], n)                # independent
+
+df = pd.DataFrame({
+    'income':      income,
+    'tax_paid':    tax_paid,
+    'loan_amount': loan_amount,
+    'city_tier':   city_tier
+})
+
+print(vif_check(df))
+
+# ── Decision tree ──────────────────────────────────────────────────────────
+# income VIF >> 10, tax_paid VIF >> 10 → they share almost all variance
+# Options:
+# 1. Drop tax_paid (income is more interpretable)
+# 2. Use Ridge regression (L2 handles multicollinearity without dropping)
+# 3. Replace both with tax_rate = tax_paid / income (engineered feature)
+
+# Verify after dropping tax_paid
+df_clean = df.drop(columns=['tax_paid'])
+print("\nAfter dropping tax_paid:")
+print(vif_check(df_clean))
+# income and loan_amount still correlate but VIF should drop below 10</code></pre>
+            <div class="cp-mistake">
+              <strong>⚠️ What interviewers at Razorpay and Google are testing:</strong>
+              <ul>
+                <li>Do you know what multicollinearity actually <em>does</em> — inflates coefficient variance, not prediction error. Tree models are immune; linear models are not.</li>
+                <li>Do you know VIF exists, or do you only check pairwise correlation? Correlation only catches two-way relationships; VIF catches multi-way (three features combining to explain a fourth).</li>
+                <li>Can you make the decision — drop, Ridge, or engineer? "It depends" without an actual decision is a failure answer.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end .coding-probs -->
+
     <!-- 3.2 — Interview Questions ─────────────────────────────────────── -->
     <div class="section-label" style="margin-top:3rem;">The Interview Questions</div>
     <h2 class="section-title">5 questions. Exact scripts. What they are actually testing.</h2>
@@ -546,6 +878,14 @@ plt.<span class="fn">show</span>()
           <div class="iq-followup">
             <strong>Follow-up they will ask:</strong> "When would you use z-score instead of IQR?" — Answer: z-score (|z| &gt; 3) works well for normally distributed features. IQR is better for skewed distributions — it is not pulled by the same extreme values you are trying to flag. In practice, use IQR by default unless you have confirmed normality.
           </div>
+          <div class="iq-redflag">
+            <strong>⚠️ Answers that fail candidates:</strong>
+            <ul>
+              <li>"Just drop the outlier" — no reasoning = automatic rejection. Always explain WHY before acting.</li>
+              <li>"Outliers are always data errors" — wrong. A 3-hour delivery to a remote hill-station is real and valid data.</li>
+              <li>Stopping at detection — never reaching the decision step (cap / flag / impute / keep). The decision is the interview.</li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -575,6 +915,14 @@ plt.<span class="fn">show</span>()
           </div>
           <div class="iq-followup">
             <strong>Follow-up they will ask:</strong> "What's the difference between Pearson and Spearman correlation?" — Answer: Pearson measures the strength of a LINEAR relationship. Spearman measures whether as one variable goes up, the other tends to go up — regardless of whether that relationship is linear. Use Spearman when features have outliers or non-linear relationships.
+          </div>
+          <div class="iq-redflag">
+            <strong>⚠️ Answers that fail candidates:</strong>
+            <ul>
+              <li>"0.84 confirms the causal link" — this is the single most common wrong answer. Interviewers hear it every day and mark you down immediately.</li>
+              <li>Forgetting to name a confounder — "correlation ≠ causation" as a one-liner without an example sounds memorised, not understood.</li>
+              <li>Saying you would just "not use" correlated features — you miss the point. High correlation makes it a useful feature; causation is a separate question.</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -607,6 +955,14 @@ plt.<span class="fn">show</span>()
           </div>
           <div class="iq-followup">
             <strong>Follow-up they will ask:</strong> "What is VIF?" — Answer: Variance Inflation Factor. VIF of 1 = no multicollinearity. VIF of 5 = moderate. VIF &gt; 10 = high — take action. Computed as <code>variance_inflation_factor(X.values, i)</code> from statsmodels for each feature i.
+          </div>
+          <div class="iq-redflag">
+            <strong>⚠️ Answers that fail candidates:</strong>
+            <ul>
+              <li>"Apply StandardScaler — it removes multicollinearity" — scaling adjusts range; it does not reduce correlation between features. A classic mixup that signals weak foundations.</li>
+              <li>"Always drop one feature" — wrong by default. For tree models it has no predictive effect; you are just discarding information unnecessarily.</li>
+              <li>Not mentioning that tree models are immune — interviewers at companies using XGBoost expect you to know this distinction.</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -672,7 +1028,7 @@ plt.<span class="fn">show</span>()
           Cost function · Gradient Descent · OLS · Assumptions · Real predictions
         </div>
       </div>
-      <a href="#" class="btn btn--ghost" style="opacity:0.4; cursor:not-allowed;" aria-disabled="true">Coming Soon</a>
+      <a href="/ml/topic/4" class="btn btn--ghost">Start Topic 04 →</a>
     </div>
   </div>
 </div>
@@ -699,6 +1055,26 @@ plt.<span class="fn">show</span>()
       var tgt = tab.dataset.tab;
       document.querySelectorAll('.code-tab').forEach(function (t) { t.classList.toggle('code-tab--active', t.dataset.tab === tgt); });
       document.querySelectorAll('.code-panel').forEach(function (p) { p.classList.toggle('code-panel--active', p.id === 'tab-' + tgt); });
+    });
+  });
+
+  /* Coding practice accordion */
+  document.querySelectorAll('.cp-hdr').forEach(function (hdr) {
+    hdr.addEventListener('click', function () {
+      var item   = hdr.closest('.cp-item');
+      var isOpen = item.classList.contains('cp-open');
+      document.querySelectorAll('.cp-item').forEach(function (i) { i.classList.remove('cp-open'); });
+      if (!isOpen) item.classList.add('cp-open');
+    });
+  });
+  document.querySelectorAll('.cp-reveal-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var sol    = document.getElementById(btn.dataset.sol);
+      if (!sol) return;
+      var hidden = sol.style.display === 'none' || sol.style.display === '';
+      sol.style.display = hidden ? 'block' : 'none';
+      btn.textContent   = hidden ? 'Hide Solution' : 'Show Solution';
     });
   });
 

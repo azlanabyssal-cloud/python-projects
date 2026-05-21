@@ -112,7 +112,7 @@ def ml_home():
 
 @app.route('/ml/topic/<int:num>')
 def ml_topic(num):
-    templates = {1: 'ml/topic1.html', 2: 'ml/topic2.html', 3: 'ml/topic3.html'}
+    templates = {1: 'ml/topic1.html', 2: 'ml/topic2.html', 3: 'ml/topic3.html', 4: 'ml/topic4.html'}
     tpl = templates.get(num)
     if not tpl:
         return render_template('404.html'), 404

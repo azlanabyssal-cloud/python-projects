@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Abyss — Master ML and AI for placements. Interactive. Animated. Free.">
+  <title>{% block title %}Abyss — ML & AI Mastery{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/system.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="/" class="nav__logo">ABYSS</a>
+      <div class="nav__links">
+        <a href="/ml" class="nav__link {% if request.path.startswith('/ml') %}nav__link--active{% endif %}">ML Track</a>
+        <a href="#" class="nav__link" style="opacity:0.4;cursor:not-allowed;">AI Track</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- AI Tutor -->
+  <button class="chat-trigger" id="chat-trigger" title="Ask Abyss AI">✦</button>
+  <div class="chat-panel" id="chat-panel">
+    <div class="chat-header">
+      <div class="chat-header__dot"></div>
+      <div>
+        <div class="chat-header__name">Ask Abyss</div>
+        <div class="chat-header__sub">ML & AI placement tutor</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Ask anything about this topic…" maxlength="500">
+      <button class="btn btn--primary btn--sm" id="chat-send">→</button>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/core.js') }}"></script>
+  {% block scripts %}{% endblock %}
+
+</body>
+</html>

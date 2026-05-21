@@ -8,3 +8,7 @@ tasks.json
 .claude/
 __pycache__/
 *.pyc
+
+# runtime files
+*.db
+*.pkl

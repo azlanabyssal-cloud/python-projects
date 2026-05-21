@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block title %}ML Track — Abyss{% endblock %}
+
+{% block content %}
+
+<div style="padding: 4rem 0 2rem; border-bottom: 1px solid var(--border);">
+  <div class="container">
+    <p class="label label--primary" style="margin-bottom:0.75rem;">Machine Learning Track</p>
+    <h1 style="font-size:clamp(2rem,5vw,3rem); font-weight:700; letter-spacing:-1px; margin-bottom:0.75rem;">
+      Zero to Mastery
+    </h1>
+    <p style="color:var(--text-muted); max-width:560px; line-height:1.75; font-size:0.95rem;">
+      52 topics across 10 levels. Every topic is interactive — you drag, interact, write code,
+      and answer placement questions before moving on.
+    </p>
+  </div>
+</div>
+
+<div style="padding: 3rem 0;">
+  <div class="container">
+
+    {% set levels = [
+      ('00', 'Prerequisites', 'primary', [
+        ('Python for ML',             '/ml/topic/1',  True),
+        ('SQL for Data Science',      '#',            False),
+        ('Statistics & Probability',  '#',            False),
+        ('Linear Algebra for ML',     '#',            False),
+        ('Calculus for ML',           '#',            False),
+      ]),
+      ('01', 'Foundation', 'primary', [
+        ('What is ML',               '/ml/topic/1',  True),
+        ('Data & Preprocessing',     '/ml/topic/2',  True),
+        ('Exploratory Data Analysis','/ml/topic/3',  True),
+        ('Feature Engineering Basics','#',           False),
+      ]),
+      ('02', 'The Engine', 'teaching', [
+        ('Loss Functions',    '#', False),
+        ('Gradient Descent',  '#', False),
+        ('Regularization',    '#', False),
+      ]),
+      ('03', 'Regression', 'primary', [
+        ('Linear Regression',  '/ml/topic/4', True),
+        ('Ridge Regression',   '#',           False),
+        ('Lasso Regression',   '#',           False),
+      ]),
+      ('04', 'Classification', 'primary', [
+        ('Logistic Regression', '#', False),
+        ('K-Nearest Neighbors', '#', False),
+        ('Naive Bayes',         '#', False),
+        ('Support Vector Machine','#',False),
+      ]),
+      ('05', 'Tree & Ensemble Methods', 'primary', [
+        ('Decision Trees',      '#', False),
+        ('Random Forest',       '#', False),
+        ('AdaBoost',            '#', False),
+        ('Gradient Boosting',   '#', False),
+        ('XGBoost',             '#', False),
+        ('LightGBM',            '#', False),
+        ('Stacking',            '#', False),
+      ]),
+      ('06', 'Unsupervised Learning', 'primary', [
+        ('K-Means Clustering',       '#', False),
+        ('DBSCAN',                   '#', False),
+        ('Hierarchical Clustering',  '#', False),
+        ('Gaussian Mixture Models',  '#', False),
+        ('PCA',                      '#', False),
+        ('t-SNE',                    '#', False),
+        ('Anomaly Detection',        '#', False),
+      ]),
+      ('07', 'Evaluation', 'teaching', [
+        ('Classification Metrics',   '#', False),
+        ('Regression Metrics',       '#', False),
+        ('ROC-AUC & PR Curves',      '#', False),
+        ('Log Loss',                 '#', False),
+        ('Bias-Variance Tradeoff',   '#', False),
+        ('Cross Validation',         '#', False),
+        ('Imbalanced Datasets',      '#', False),
+        ('Hyperparameter Tuning',    '#', False),
+        ('Clustering Evaluation',    '#', False),
+      ]),
+      ('08', 'Special Topics', 'primary', [
+        ('Recommendation Systems',  '#', False),
+        ('Time Series',             '#', False),
+        ('A/B Testing',             '#', False),
+        ('Model Interpretability',  '#', False),
+        ('NLP from ML Perspective', '#', False),
+      ]),
+      ('09', 'Neural Networks & Deep Learning', 'primary', [
+        ('Neural Networks',          '#', False),
+        ('Activation Functions',     '#', False),
+        ('Backpropagation',          '#', False),
+        ('Gradient Descent in NN',   '#', False),
+        ('Batch Normalization',      '#', False),
+        ('CNN',                      '#', False),
+        ('RNN & LSTM',               '#', False),
+        ('Transformers & Attention', '#', False),
+        ('Transfer Learning',        '#', False),
+        ('LLM Basics',               '#', False),
+      ]),
+      ('10', 'Real World', 'teaching', [
+        ('Feature Engineering Deep Dive', '#', False),
+        ('End to End Pipeline',           '#', False),
+        ('Model Deployment',              '#', False),
+        ('MLOps Basics',                  '#', False),
+        ('Model Monitoring & Drift',      '#', False),
+      ]),
+    ] %}
+
+    {% for num, title, accent, topics in levels %}
+    <div style="margin-bottom:2.5rem;">
+      <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.25rem;">
+        <span style="font-family:var(--font-code); font-size:var(--t-xs); color:var(--{{ accent }}); font-weight:700; letter-spacing:1px;">
+          LEVEL {{ num }}
+        </span>
+        <span style="font-size:1.15rem; font-weight:600;">{{ title }}</span>
+        <span class="badge badge--muted">{{ topics|length }} topics</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:0.75rem;">
+        {% for name, url, available in topics %}
+        <a href="{{ url }}"
+           style="display:flex; align-items:center; gap:0.75rem; padding:0.85rem 1rem;
+                  background:var(--bg-elevated); border:1px solid var(--border);
+                  border-radius:var(--radius-sm); font-size:var(--t-sm);
+                  transition: border-color 0.2s, background 0.2s;
+                  {% if not available %}opacity:0.38; cursor:not-allowed;{% endif %}"
+           {% if not available %}tabindex="-1" aria-disabled="true"{% endif %}
+           onmouseover="if({{ available|lower }}) { this.style.borderColor='var(--primary-border)'; this.style.background='var(--primary-glow)'; }"
+           onmouseout="this.style.borderColor=''; this.style.background='';">
+          <span style="width:6px; height:6px; border-radius:50%; flex-shrink:0;
+                       background: {% if available %}var(--success){% else %}var(--border-strong){% endif %};">
+          </span>
+          <span style="color: {% if available %}var(--text-primary){% else %}var(--text-muted){% endif %}; font-weight:{% if available %}500{% else %}400{% endif %};">
+            {{ name }}
+          </span>
+          {% if available %}
+          <span style="margin-left:auto; color:var(--primary); font-size:0.7rem;">→</span>
+          {% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>Abyss.Chat.init('ml-overview');</script>
+{% endblock %}

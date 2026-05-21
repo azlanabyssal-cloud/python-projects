@@ -1,0 +1,57 @@
+[
+  {
+    "question": "A linear regression model predicts house prices in Hyderabad: R²=0.88, RMSE=₹9.3 lakh. Your manager says 'R² is great — ship it.' What is the correct response?",
+    "options": [
+      "Agree — R²=0.88 means the model explains 88% of variance. That is production-ready.",
+      "R²=0.88 is strong but not sufficient alone. We must check the residual plot for patterns (non-linearity, heteroscedasticity). A patterned residual plot means predictions are systematically wrong in certain ranges — high R² does not protect against violated assumptions. Also confirm whether RMSE=₹9.3L is acceptable for the business decision.",
+      "Disagree — R² below 0.95 is never production-ready for price prediction.",
+      "RMSE=₹9.3L is too high — apply MinMaxScaler and refit."
+    ],
+    "answer": 1,
+    "explanation": "R² tells you how much variance the model explains — not whether it is correct. A model can have R²=0.90 but systematically underpredict luxury apartments and overpredict budget ones. The residual plot is the real test: random scatter = good, U-shape = violated linearity, funnel = heteroscedasticity. R² is a starting point, not a stamp of approval. Always evaluate both statistical quality (residuals) and business suitability (is ₹9.3L error acceptable for a ₹60L home?)."
+  },
+  {
+    "question": "You fit linear regression on delivery_time. Residuals vs fitted plot shows a funnel — tight residuals at low fitted values, wildly spread at high values. What is the violation and fix?",
+    "options": [
+      "Overfitting — add L2 regularisation (Ridge) to tighten the residuals.",
+      "Normal — residual spread naturally increases with larger predictions.",
+      "Heteroscedasticity — error variance is not constant across fitted values, violating OLS assumptions. Fix: apply a log transform to delivery_time to stabilise variance. Or use Weighted Least Squares (WLS), giving less weight to high-variance observations.",
+      "Underfitting — add more features so the model captures the pattern better."
+    ],
+    "answer": 2,
+    "explanation": "Homoscedasticity (equal error variance) is a core OLS assumption. Funnel in residuals = heteroscedasticity. Why it matters: OLS coefficient estimates are still unbiased but standard errors are wrong, making confidence intervals and p-values unreliable. Most common fix: log or sqrt transform the target (delivery times are right-skewed — log brings in the tail). Ridge regularisation does not fix heteroscedasticity. This distinction appears in MNC product and research-level interviews."
+  },
+  {
+    "question": "Predicting monthly salary of freshers in India. Some IIT-Bombay students in Google Bangalore earn ₹50L — genuine but extreme. Which error metric do you report to the HR analytics team?",
+    "options": [
+      "R² — normalised and easiest to explain to non-technical stakeholders.",
+      "RMSE only — it penalises large errors heavily, making it the strictest and most honest metric.",
+      "Both MAE and RMSE. MAE gives the typical prediction error most freshers experience — the HR team's action number. RMSE is inflated by the ₹50L outliers. If RMSE >> MAE, that gap itself is information: extreme outliers are dominating your errors. Never report only one.",
+      "MAPE (Mean Absolute Percentage Error) — percentage error is always most interpretable."
+    ],
+    "answer": 2,
+    "explanation": "MAE: every rupee of error weighted equally — the 'typical' error. RMSE: squares errors, so ₹50L outliers contribute ₹2500Cr² to the sum — massive distortion. Reporting both lets you say: 'Typical error: ₹1.2L (MAE). Worst-case errors average ₹3.8L (RMSE) — driven by IIT-tier outliers.' The ratio RMSE/MAE > 1.4 means investigate your tail. MAPE breaks when salary approaches 0 and is misleading for asymmetric distributions. In placement: interviewers expect you to report both and explain the gap."
+  },
+  {
+    "question": "You have 180 engineered features to predict placement salary. You believe only 12 are genuinely signal — the rest are noise. Should you use Ridge (L2) or Lasso (L1) regularisation?",
+    "options": [
+      "Ridge — more numerically stable and handles multicollinearity better than Lasso.",
+      "Lasso — L1 drives irrelevant feature coefficients to exactly zero, performing automatic feature selection. With 168 noise features, Lasso produces a sparse 12-feature model that is interpretable and does not overfit to noise.",
+      "Neither — with more features than clear signal, use PCA to compress first, then linear regression.",
+      "Ridge with very high alpha — extreme shrinkage approximates Lasso behaviour."
+    ],
+    "answer": 1,
+    "explanation": "L1 (Lasso) sparsity is a geometric property: the L1 constraint region has corners at the coordinate axes, and the loss surface minimum tends to land on those corners — zeroing coefficients out. L2 (Ridge) has a smooth spherical constraint that shrinks all coefficients proportionally, but rarely to zero. Rule: if most features are irrelevant → Lasso. If most features matter but are correlated → Ridge. Unsure → Elastic Net (combines both). High Ridge alpha does NOT zero out features — the shrinkage approaches zero but never reaches it. This L1 vs L2 distinction is asked in nearly every product ML interview."
+  },
+  {
+    "question": "Training linear regression with gradient descent on salary data. After 2000 iterations the loss oscillates wildly — RMSE bounces between ₹4L and ₹18L, never converging. What is the diagnosis?",
+    "options": [
+      "Underfitting — add polynomial features so the loss surface has a clearer minimum.",
+      "Dataset too small — gradient descent cannot converge on fewer than 10,000 samples.",
+      "Learning rate is too high — each gradient step overshoots the loss minimum and climbs the other side. Fix: reduce learning rate by 10× and restart. Or use sklearn's LinearRegression which solves via closed-form OLS — no learning rate to tune at all.",
+      "Features not normalised — StandardScaler will fix convergence immediately."
+    ],
+    "answer": 2,
+    "explanation": "Wild oscillation (not slow convergence) = learning rate too large. The loss surface of linear regression is a convex bowl — gradient descent always finds the global minimum IF the learning rate is small enough. Too large: it jumps past the bottom and climbs the other side repeatedly. Too small: convergence is painfully slow. Unnormalised features cause slow convergence (elongated elliptical loss surface) — not oscillation. For practical linear regression with tabular data, sklearn's closed-form OLS (SVD decomposition) is preferred — no learning rate, guaranteed optimal solution in one pass."
+  }
+]
